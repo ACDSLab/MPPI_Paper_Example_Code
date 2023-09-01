@@ -1,8 +1,11 @@
 #include <mppi/controllers/MPPI/mppi_controller.cuh>
-#include <mppi/dynamics/cartpole/cartpole_dynamics.cuh>
-#include <mppi/cost_functions/cartpole/cartpole_quadratic_cost.cuh>
+// #include <mppi/dynamics/cartpole/cartpole_dynamics.cuh>
+// #include <mppi/cost_functions/cartpole/cartpole_quadratic_cost.cuh>
 #include <mppi/feedback_controllers/DDP/ddp.cuh>
-#include <mppi_paper_example/cartpole_plant.hpp>
+
+#include <mppi_paper_example/dynamics/diff_drive/diff_drive.cuh>
+#include <mppi_paper_example/costs/diff_drive_cost/diff_drive_cost.cuh>
+#include <mppi_paper_example/plants/sim_plant/sim_plant.hpp>
 
 #include <stdio.h>
 
@@ -12,10 +15,10 @@ const int NUM_TIMESTEPS = 100;
 const int NUM_ROLLOUTS = 2048;
 // const int NUM_ROLLOUTS = 8192 * 4;
 const int DYN_BLOCK_X = 64;
-using DYN_T = CartpoleDynamics;
+using DYN_T = DiffDrive;
 const int DYN_BLOCK_Y = DYN_T::STATE_DIM;
 // const int DYN_BLOCK_Y = 1;
-using COST_T = CartpoleQuadraticCost;
+using COST_T = DiffDriveCost;
 using FB_T = DDPFeedback<DYN_T, NUM_TIMESTEPS>;
 #ifdef USE_NEW_API
 using SAMPLING_T = mppi::sampling_distributions::GaussianDistribution<DYN_T::DYN_PARAMS_T>;
@@ -25,15 +28,12 @@ using CONTROLLER_T = VanillaMPPIController<DYN_T, COST_T, FB_T, NUM_TIMESTEPS, N
 #endif
 using CONTROLLER_PARAMS_T = CONTROLLER_T::TEMPLATED_PARAMS;
 
-using PLANT_T = SimpleCartpolePlant<CONTROLLER_T>;
+using PLANT_T = SimpleDynPlant<CONTROLLER_T>;
 
 int main (int argc, char** argv){
   float dt = 0.02;
   // set up dynamics
-  float cart_mass = 1.0;
-  float pole_mass = 1.0;
-  float pole_length = 1.0;
-  DYN_T dynamics(cart_mass, pole_mass, pole_length);
+  DYN_T dynamics;
   // set up cost
   COST_T cost;
   // set up feedback controller

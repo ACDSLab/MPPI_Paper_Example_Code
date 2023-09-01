@@ -6,6 +6,7 @@ include(MPPIGenericToolsConfig)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(BUILD_TESTS OFF CACHE BOOL "Build MPPI-Generic Tests")
+# set(BUILD_EXAMPLES OFF CACHE BOOL "Build MPPI-Generic Examples")
 
 # Other necessary packages
 find_package(Eigen3 REQUIRED)
@@ -18,7 +19,6 @@ include_directories(SYSTEM
   )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic/submodules/cnpy/include)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic ${CMAKE_BINARY_DIR}/submodules/MPPI-Generic)
 
