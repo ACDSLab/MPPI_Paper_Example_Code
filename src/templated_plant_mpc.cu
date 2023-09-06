@@ -4,7 +4,8 @@
 #include <mppi/feedback_controllers/DDP/ddp.cuh>
 
 #include <mppi_paper_example/dynamics/diff_drive/diff_drive.cuh>
-#include <mppi_paper_example/costs/diff_drive_cost/diff_drive_cost.cuh>
+// #include <mppi_paper_example/costs/diff_drive_cost/diff_drive_cost.cuh>
+#include <mppi_paper_example/costs/ComparisonCost/comparison_cost.cuh>
 #include <mppi_paper_example/plants/sim_plant/sim_plant.hpp>
 
 #include <stdio.h>
@@ -18,7 +19,8 @@ const int DYN_BLOCK_X = 64;
 using DYN_T = DiffDrive;
 const int DYN_BLOCK_Y = DYN_T::STATE_DIM;
 // const int DYN_BLOCK_Y = 1;
-using COST_T = DiffDriveCost;
+// using COST_T = DiffDriveCost;
+using COST_T = ComparisonCost<DYN_T::DYN_PARAMS_T>;
 using FB_T = DDPFeedback<DYN_T, NUM_TIMESTEPS>;
 #ifdef USE_NEW_API
 using SAMPLING_T = mppi::sampling_distributions::GaussianDistribution<DYN_T::DYN_PARAMS_T>;
