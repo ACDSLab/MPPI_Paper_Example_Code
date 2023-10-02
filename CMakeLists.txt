@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 project(mppi_paper_examplesi CXX CUDA)
 
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic/cmake")
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/subtree/MPPI-Generic/cmake")
 include(MPPIGenericToolsConfig)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -19,7 +19,7 @@ include_directories(SYSTEM
   )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic/submodules/cnpy ${CMAKE_BINARY_DIR}/submodules/MPPI-Generic/submodules/cnpy)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic ${CMAKE_BINARY_DIR}/submodules/MPPI-Generic)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/subtree/MPPI-Generic/submodules/cnpy ${CMAKE_BINARY_DIR}/subtree/MPPI-Generic/submodules/cnpy)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/subtree/MPPI-Generic ${CMAKE_BINARY_DIR}/subtree/MPPI-Generic)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
