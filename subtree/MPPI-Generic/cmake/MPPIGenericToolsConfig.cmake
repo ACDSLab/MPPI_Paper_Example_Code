@@ -27,7 +27,7 @@ set(CUDA_PROPAGATE_HOST_FLAGS OFF)
 # Autodetect Cuda Architecture on system and add to executables
 # More info for autodetection:
 # https://stackoverflow.com/questions/35485087/determining-which-gencode-compute-arch-values-i-need-for-nvcc-within-cmak
-if (NOT DEFINED MPPI_ARCH_FLAGS)
+if (NOT DEFINED MPPI_ARCH_FLAGS AND NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
   CUDA_SELECT_NVCC_ARCH_FLAGS(MPPI_ARCH_FLAGS ${CUDA_ARCH_LIST})
 
   if (MPPI_ARCH_FLAGS STREQUAL "")
@@ -42,5 +42,5 @@ if (NOT DEFINED MPPI_ARCH_FLAGS)
     # set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -code=sm_72 -arch=compute_52 -w")
   endif()
 else()
-  message(STATUS "Auotdetection already ran and found ${MPPI_ARCH_FLAGS}.")
+  message(STATUS "Auotdetection already ran and found ${MPPI_ARCH_FLAGS} ${CMAKE_CUDA_ARCHITECTURES}.")
 endif()

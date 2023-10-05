@@ -55,3 +55,5 @@ resource
 *.mp4
 *.mpeg
 
+# .env files
+*.env

@@ -11,3 +11,15 @@ foreach(T_FILE IN LISTS CUDA_TARGET_SRCS)
   # set_target_properties(${T_NAME} PROPERTIES FOLDER test)
 endforeach()
 
+# Create ROS2 executable
+set(ROS2_EXECUTABLE ros2_mppi)
+add_executable(${ROS2_EXECUTABLE} ROS2_MPPI.cpp)
+ament_target_dependencies(${ROS2_EXECUTABLE}
+  rclcpp
+  nav2_mppi_controller
+)
+
+install(TARGETS
+  ${ROS2_EXECUTABLE}
+  DESTINATION lib/${PROJECT_NAME}
+)

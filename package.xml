@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>mppi_paper_examples</name>
+  <version>0.0.1</version>
+  <description>Package to compare MPPI-Generic to ROS 2 MPPI</description>
+  <maintainer email="bvlahov3@gatech.edu">Bogdan Vlahov</maintainer>
+  <license>BSD</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>nav2_mppi_controller</depend>
+  <depend>rclcpp</depend>
+
+  <!-- <depend>nav2_core</depend> -->
+  <!-- <depend>nav2_util</depend> -->
+  <!-- <depend>nav2_costmap_2d</depend> -->
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
