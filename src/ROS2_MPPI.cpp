@@ -1,7 +1,7 @@
-#include <stdio.h>
-#include <nav2_mppi_controller/optimizer.hpp>
 #include <nav2_costmap_2d/inflation_layer.hpp>
+#include <nav2_mppi_controller/optimizer.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <stdio.h>
 
 #include <chrono>
 
@@ -17,7 +17,7 @@ void addObstacle(nav2_costmap_2d::Costmap2D* costmap, unsigned int upper_left_co
   }
 }
 
-int main (int argc, char* argv[])
+int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
   printf("Hello World\n");
@@ -45,7 +45,8 @@ int main (int argc, char* argv[])
 
   auto costmap_ros = std::make_shared<nav2_costmap_2d::Costmap2DROS>("cost_map_node");
   costmap_ros->on_configure(rclcpp_lifecycle::State{});
-  auto costmap = std::make_shared<nav2_costmap_2d::Costmap2D>(cells_x, cells_y, resolution, origin_x, origin_y, cost_map_default_value);
+  auto costmap = std::make_shared<nav2_costmap_2d::Costmap2D>(cells_x, cells_y, resolution, origin_x, origin_y,
+                                                              cost_map_default_value);
   *(costmap_ros->getCostmap()) = *costmap;
   std::vector<geometry_msgs::msg::Point> footprint;
   geometry_msgs::msg::Point point;
@@ -66,9 +67,9 @@ int main (int argc, char* argv[])
   costmap_ros->setRobotFootprint(footprint);
 
   // Add obstacle
-  double obstacle_pose_x = 8.0; // [m]
-  double obstacle_pose_y = 8.0; // [m]
-  double obstacle_size = 0.4; // [m]
+  double obstacle_pose_x = 8.0;  // [m]
+  double obstacle_pose_y = 8.0;  // [m]
+  double obstacle_size = 0.4;    // [m]
   int obs_x = obstacle_pose_x / resolution;
   int obs_y = obstacle_pose_y / resolution;
   int obs_size = obstacle_size / resolution;
@@ -87,14 +88,15 @@ int main (int argc, char* argv[])
   params.emplace_back(rclcpp::Parameter(node_name + ".lookahead_dist", lookahead_dist));
   params.emplace_back(rclcpp::Parameter(node_name + ".motion_model", motion_model));
   params.emplace_back(rclcpp::Parameter(node_name + ".critics", critics));
-  // params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.enabled", false));
+  // params.emplace_back(rclcpp::Parameter(node_name +
+  // ".ObstaclesCritic.enabled", false));
   params.emplace_back(rclcpp::Parameter("controller_frequency", controller_frequency));
   options.parameter_overrides(params);
 
   auto node = std::make_shared<rclcpp_lifecycle::LifecycleNode>(node_name, options);
   auto parameters_handler = std::make_unique<mppi::ParametersHandler>(node);
   auto optimizer = std::make_shared<mppi::Optimizer>();
-  std::weak_ptr<rclcpp_lifecycle::LifecycleNode> weak_ptr_node{node};
+  std::weak_ptr<rclcpp_lifecycle::LifecycleNode> weak_ptr_node{ node };
 
   for (auto layer = costmap_ros->getLayeredCostmap()->getPlugins()->begin();
        layer != costmap_ros->getLayeredCostmap()->getPlugins()->end(); ++layer)
@@ -108,7 +110,7 @@ int main (int argc, char* argv[])
     double circum_radius = costmap_ros->getLayeredCostmap()->getCircumscribedRadius();
     double resolution = costmap_ros->getCostmap()->getResolution();
     double result = inflation_layer->computeCost(circum_radius / resolution);
-    std:: cout << "Radius " << circum_radius << std::endl;
+    std::cout << "Radius " << circum_radius << std::endl;
     std::cout << "Result " << result << std::endl;
     float inflation_scale_factor = inflation_layer->getCostScalingFactor();
     std::cout << "Inflation scale factor: " << inflation_scale_factor << std::endl;
@@ -116,7 +118,7 @@ int main (int argc, char* argv[])
     std::cout << "Inflation radius: " << inflation_radius << std::endl;
   }
   double circum_radius = costmap_ros->getLayeredCostmap()->getCircumscribedRadius();
-  std:: cout << "Radius " << circum_radius << std::endl;
+  std::cout << "Radius " << circum_radius << std::endl;
   optimizer->initialize(weak_ptr_node, node->get_name(), costmap_ros, parameters_handler.get());
 
   geometry_msgs::msg::PoseStamped start_pose;
@@ -135,7 +137,7 @@ int main (int argc, char* argv[])
   empty_path.poses.push_back(goal_pose);
   empty_path.header.frame_id = frame;
   empty_path.header.stamp = time;
-  nav2_core::GoalChecker* dummy_goal_checker{nullptr};
+  nav2_core::GoalChecker* dummy_goal_checker{ nullptr };
   std::cout << "About to optimize" << std::endl;
   int num_iterations = 10000;
   double total_duration_ms = 0.0f;
@@ -150,4 +152,3 @@ int main (int argc, char* argv[])
   rclcpp::shutdown();
   return 0;
 }
-

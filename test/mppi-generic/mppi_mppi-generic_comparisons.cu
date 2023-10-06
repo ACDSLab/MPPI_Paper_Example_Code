@@ -24,6 +24,7 @@ class MPPIGenericMPPITest : public ::testing::Test
 public:
   using CONTROLLER_PARAMS_T = typename CONTROLLER_T::TEMPLATED_PARAMS;
   using PLANT_T = SimpleDynPlant<CONTROLLER_T>;
+
 protected:
   CommonSettings settings;
   const int DYN_BLOCK_X = 64;
@@ -115,15 +116,13 @@ protected:
   {
     delete plant;
     controller.reset();
-
   }
 };
 
-using DIFFERENT_CONTROLLERS = ::testing::Types<CONTROLLER_TEMPLATE<128>,
-      CONTROLLER_TEMPLATE<256>, CONTROLLER_TEMPLATE<512>, CONTROLLER_TEMPLATE<1024>,
-      CONTROLLER_TEMPLATE<2048>,
-      CONTROLLER_TEMPLATE<4096>, CONTROLLER_TEMPLATE<6144>, CONTROLLER_TEMPLATE<8192>,
-      CONTROLLER_TEMPLATE<4096*4>>;
+using DIFFERENT_CONTROLLERS =
+    ::testing::Types<CONTROLLER_TEMPLATE<128>, CONTROLLER_TEMPLATE<256>, CONTROLLER_TEMPLATE<512>,
+                     CONTROLLER_TEMPLATE<1024>, CONTROLLER_TEMPLATE<2048>, CONTROLLER_TEMPLATE<4096>,
+                     CONTROLLER_TEMPLATE<6144>, CONTROLLER_TEMPLATE<8192>, CONTROLLER_TEMPLATE<4096 * 4>>;
 
 TYPED_TEST_SUITE(MPPIGenericMPPITest, DIFFERENT_CONTROLLERS);
 
@@ -141,8 +140,7 @@ TYPED_TEST(MPPIGenericMPPITest, DifferentNumSamples)
     times.add(duration);
   }
   printf("MPPI-Generic MPPI with %d rollouts optimization time: %f +- %f ms\n",
-         this->controller->sampler_->getNumRollouts(),
-         times.mean(), sqrt(times.variance()));
+         this->controller->sampler_->getNumRollouts(), times.mean(), sqrt(times.variance()));
   auto loop_time_ms = this->plant->getAvgLoopTime();
   std::cout << "Avg Loop time: " << loop_time_ms << " ms" << std::endl;
   std::cout << "Average Optimization Hz: " << 1.0f / (loop_time_ms * 1e-3f) << " Hz" << std::endl;

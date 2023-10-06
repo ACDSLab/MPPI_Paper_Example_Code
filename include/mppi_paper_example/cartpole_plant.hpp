@@ -11,11 +11,13 @@ public:
   using output_array = typename CartpoleDynamics::output_array;
 
   SimpleCartpolePlant(std::shared_ptr<CONTROLLER_T> controller, int hz, int optimization_stride)
-  : BasePlant<CONTROLLER_T>(controller, hz, optimization_stride) {
+    : BasePlant<CONTROLLER_T>(controller, hz, optimization_stride)
+  {
     system_dynamics_ = std::make_shared<CartpoleDynamics>(1.0, 1.0, 1.0);
   }
 
-  void pubControl(const control_array& u) {
+  void pubControl(const control_array& u)
+  {
     state_array state_derivative;
     output_array dynamics_output;
     state_array prev_state = current_state_;
@@ -25,19 +27,26 @@ public:
     current_time_ += dt;
   }
 
-  void pubNominalState(const state_array& s) {}
+  void pubNominalState(const state_array& s)
+  {
+  }
 
-  void pubFreeEnergyStatistics(MPPIFreeEnergyStatistics& fe_stats) {}
+  void pubFreeEnergyStatistics(MPPIFreeEnergyStatistics& fe_stats)
+  {
+  }
 
-  int checkStatus() {
+  int checkStatus()
+  {
     return 0;
   }
 
-  double getCurrentTime() {
+  double getCurrentTime()
+  {
     return current_time_;
   }
 
-  double getPoseTime() {
+  double getPoseTime()
+  {
     return this->state_time_;
   }
 
@@ -52,6 +61,7 @@ public:
   }
 
   state_array current_state_ = state_array::Zero();
+
 protected:
   std::shared_ptr<CartpoleDynamics> system_dynamics_;
   double current_time_ = 0.0;

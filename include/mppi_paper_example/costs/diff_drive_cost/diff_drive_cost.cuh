@@ -17,7 +17,10 @@ public:
 
   DiffDriveCost(cudaStream_t stream = nullptr);
 
-  std::string getCostFunctionName() { return "DiffDrive Cost";}
+  std::string getCostFunctionName()
+  {
+    return "DiffDrive Cost";
+  }
 
   float computeStateCost(const Eigen::Ref<const output_array> y, int timestep, int* crash_status);
 
