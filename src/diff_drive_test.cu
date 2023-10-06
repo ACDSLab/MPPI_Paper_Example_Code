@@ -30,9 +30,6 @@ using control_array = CONTROLLER_T::control_array;
 int main (int argc, char** argv){
   float dt = 0.02;
   // set up dynamics
-  float cart_mass = 1.0;
-  float pole_mass = 1.0;
-  float pole_length = 1.0;
   DYN_T* dynamics = new DYN_T();
   // set up cost
   COST_T* cost = new COST_T();

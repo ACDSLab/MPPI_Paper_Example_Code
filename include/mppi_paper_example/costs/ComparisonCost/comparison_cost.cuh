@@ -55,6 +55,15 @@ public:
 
   ComparisonCost(cudaStream_t stream = nullptr);
 
+  void bindToStream(cudaStream_t stream)
+  {
+    if (tex_helper_)
+    {
+      tex_helper_->bindToStream(stream);
+    }
+    PARENT_CLASS::bindToStream(stream);
+  }
+
   ~ComparisonCost();
 
   void GPUSetup();
@@ -82,8 +91,9 @@ public:
   __host__ __device__ float computeGoalAngleCost(const float* y, const int t, int* crash, float* theta_c);
 
   __device__ float terminalCost(float* y, float* theta_c);
-protected:
+
   TwoDTextureHelper<float>* tex_helper_ = nullptr;
+protected:
 };
 
 #ifdef __CUDACC__

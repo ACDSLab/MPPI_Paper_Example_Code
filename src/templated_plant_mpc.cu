@@ -76,7 +76,7 @@ int main (int argc, char** argv){
   std::cout << "Average Optimization time: " << plant.getAvgOptimizationTime() << " ms" << std::endl;
   std::cout << "Last Optimization time: " << plant.getLastOptimizationTime() << " ms" << std::endl;
   std::cout << "Avg Loop time: " << plant.getAvgLoopTime() << " ms" << std::endl;
-  std::cout << "Average Optimization Hz: " << 1.0f / (plant.getAvgOptimizationTime() * 1e-3f) << " ms" << std::endl;
+  std::cout << "Average Optimization Hz: " << 1.0f / (plant.getAvgOptimizationTime() * 1e-3f) << " Hz" << std::endl;
 
   auto control_sequence = controller->getControlSeq();
   std::cout << "State: \n" << plant.current_state_.transpose() << std::endl;
