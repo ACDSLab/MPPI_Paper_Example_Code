@@ -25,7 +25,7 @@ protected:
   std::string motion_model = "DiffDrive";
   std::vector<std::string> critics = { "GoalCritic", "GoalAngleCritic", "ObstaclesCritic" };
   CommonSettings settings;
-  double controller_frequency = 50.0;
+  double controller_frequency = 1.0 / settings.dt;
 
   // ROS Variables
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros;
@@ -43,8 +43,16 @@ protected:
   void SetUp() override
   {
     rclcpp::init(0, nullptr);
-    rcutils_logging_set_logger_level("costmap", RCUTILS_LOG_SEVERITY_FATAL);
-    rcutils_logging_set_logger_level(node_name.c_str(), RCUTILS_LOG_SEVERITY_FATAL);
+    auto check = rcutils_logging_set_logger_level("costmap", RCUTILS_LOG_SEVERITY_FATAL);
+    if (check)
+    {
+      std::cout << "Something went wrong with logging: " << check << std::endl;
+    }
+    auto check2 = rcutils_logging_set_logger_level(node_name.c_str(), RCUTILS_LOG_SEVERITY_FATAL);
+    if (check2)
+    {
+      std::cout << "Something went wrong with logging: " << check2 << std::endl;
+    }
 
     /**
      * Create Costmap
@@ -93,8 +101,21 @@ protected:
     params.emplace_back(rclcpp::Parameter(node_name + ".lookahead_dist", settings.lookahead_dist));
     params.emplace_back(rclcpp::Parameter(node_name + ".motion_model", motion_model));
     params.emplace_back(rclcpp::Parameter(node_name + ".critics", critics));
-    // params.emplace_back(rclcpp::Parameter(node_name +
-    // ".ObstaclesCritic.enabled", false));
+    params.emplace_back(rclcpp::Parameter(node_name + ".temperature", settings.lambda));
+    params.emplace_back(rclcpp::Parameter(node_name + ".model_dt", settings.dt));
+    params.emplace_back(rclcpp::Parameter(node_name + ".GoalCritic.cost_weight", settings.goal_weight));
+    params.emplace_back(rclcpp::Parameter(node_name + ".GoalCritic.cost_power", settings.goal_power));
+    params.emplace_back(rclcpp::Parameter(node_name + ".GoalCritic.threshold_to_consider", settings.goal_dist_threshold));
+    params.emplace_back(rclcpp::Parameter(node_name + ".GoalAngleCritic.cost_weight", settings.goal_angle_weight));
+    params.emplace_back(rclcpp::Parameter(node_name + ".GoalAngleCritic.cost_power", settings.goal_angle_power));
+    params.emplace_back(rclcpp::Parameter(node_name + ".GoalAngleCritic.threshold_to_consider", settings.goal_dist_threshold));
+    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.cost_power", settings.obs_power));
+    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.repulsion_weight", settings.obs_repulsion_weight));
+    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.critical_weight", settings.obs_traj_weight));
+    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.consider_footprint", settings.consider_footprint));
+    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.near_goal_distance", settings.near_goal_distance));
+    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.inflation_radius", settings.obs_inflation_radius));
+    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.cost_scaling_factor", settings.obs_scaling_factor));
     params.emplace_back(rclcpp::Parameter("controller_frequency", controller_frequency));
     options.parameter_overrides(params);
 

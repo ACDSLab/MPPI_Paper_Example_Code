@@ -44,6 +44,7 @@ add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/subtree/MPPI-Generic ${CMAKE_BINARY
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+set(BUILD_TESTS ON)
 if (BUILD_TESTS)
   if (ament_cmake_FOUND)
     find_package(ament_cmake_gtest REQUIRED)

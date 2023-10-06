@@ -30,6 +30,21 @@ struct CommonSettings
 
   const float dt = 0.02f;
   const float lambda = 1.0f;
+  const float goal_weight = 5.0f;
+  const int goal_power = 1;
+  const float goal_angle_weight = 5.0f;
+  const int goal_angle_power = 1;
+  const float goal_dist_threshold = 1000.0f; // [m]
+  const float inscribed_radius = 0.0f; // [m]
+  const float circumscribed_radius = 0.226274; // [m]
+
+  const int obs_power = 1;
+  const float obs_repulsion_weight = 0.0f;
+  const float obs_traj_weight = 20.0f;
+  const float near_goal_distance = 0.5f; // [m]
+  const float obs_inflation_radius = 0.1f; // [m]
+  const float obs_scaling_factor = 1.0f;
+  const bool consider_footprint = false;
 };
 
 template <typename T = double>

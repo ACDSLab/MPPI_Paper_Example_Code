@@ -20,7 +20,6 @@ void addObstacle(nav2_costmap_2d::Costmap2D* costmap, unsigned int upper_left_co
 int main(int argc, char* argv[])
 {
   rclcpp::init(argc, argv);
-  printf("Hello World\n");
   std::string motion_model = "DiffDrive";
   std::vector<std::string> critics;
   critics.push_back("GoalCritic");
@@ -97,28 +96,6 @@ int main(int argc, char* argv[])
   auto parameters_handler = std::make_unique<mppi::ParametersHandler>(node);
   auto optimizer = std::make_shared<mppi::Optimizer>();
   std::weak_ptr<rclcpp_lifecycle::LifecycleNode> weak_ptr_node{ node };
-
-  for (auto layer = costmap_ros->getLayeredCostmap()->getPlugins()->begin();
-       layer != costmap_ros->getLayeredCostmap()->getPlugins()->end(); ++layer)
-  {
-    auto inflation_layer = std::dynamic_pointer_cast<nav2_costmap_2d::InflationLayer>(*layer);
-    if (!inflation_layer)
-    {
-      continue;
-    }
-    std::cout << (*layer)->getName() << std::endl;
-    double circum_radius = costmap_ros->getLayeredCostmap()->getCircumscribedRadius();
-    double resolution = costmap_ros->getCostmap()->getResolution();
-    double result = inflation_layer->computeCost(circum_radius / resolution);
-    std::cout << "Radius " << circum_radius << std::endl;
-    std::cout << "Result " << result << std::endl;
-    float inflation_scale_factor = inflation_layer->getCostScalingFactor();
-    std::cout << "Inflation scale factor: " << inflation_scale_factor << std::endl;
-    float inflation_radius = static_cast<float>(inflation_layer->getInflationRadius());
-    std::cout << "Inflation radius: " << inflation_radius << std::endl;
-  }
-  double circum_radius = costmap_ros->getLayeredCostmap()->getCircumscribedRadius();
-  std::cout << "Radius " << circum_radius << std::endl;
   optimizer->initialize(weak_ptr_node, node->get_name(), costmap_ros, parameters_handler.get());
 
   geometry_msgs::msg::PoseStamped start_pose;
