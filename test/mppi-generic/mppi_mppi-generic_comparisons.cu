@@ -43,16 +43,25 @@ protected:
   void SetUp() override
   {
     SAMPLING_T::SAMPLING_PARAMS_T sampler_params;
-    for (int i = 0; i < DYN_T::CONTROL_DIM; i++)
-    {
-      sampler_params.std_dev[i] = 1.0f;
-    }
+    sampler_params.std_dev[C_IND_CLASS(DYN_T::DYN_PARAMS_T, LEFT_ROT_SPD)] = settings.std_dev_v;
+    sampler_params.std_dev[C_IND_CLASS(DYN_T::DYN_PARAMS_T, RIGHT_ROT_SPD)] = settings.std_dev_v;
     sampler = new SAMPLING_T(sampler_params);
 
     /**
      * Set up dynamics
      **/
     dynamics = new DYN_T();
+    auto dynamics_params = dynamics->getParams();
+    dynamics_params.r = settings.robot_radius;
+    dynamics_params.L = settings.robot_length;
+    dynamics->setParams(dynamics_params);
+    float2 control_range = make_float2(settings.v_min, settings.v_max);
+    std::array<float2, DYN_T::CONTROL_DIM> control_ranges;
+    for (int i = 0; i < DYN_T::CONTROL_DIM; i++)
+    {
+      control_ranges[i] = control_range;
+    }
+    dynamics->setControlRanges(control_ranges);
 
     /**
      * Set up Cost function
@@ -61,6 +70,19 @@ protected:
     auto cost_params = cost->getParams();
     cost_params.goal.pos = make_float2(settings.goal_x, settings.goal_y);
     cost_params.goal_angle.yaw = settings.goal_yaw;
+    cost_params.goal.power = settings.goal_power;
+    cost_params.goal.weight = settings.goal_weight;
+    cost_params.goal_angle.power = settings.goal_angle_power;
+    cost_params.goal_angle.weight = settings.goal_angle_weight;
+    cost_params.goal_distance_threshold = settings.goal_dist_threshold;
+    cost_params.obstacle.use_footprint = settings.consider_footprint;
+    cost_params.obstacle.near_goal_distance = settings.near_goal_distance;
+    cost_params.obstacle.inflation_radius = settings.obs_inflation_radius;
+    cost_params.obstacle.repulsion_weight = settings.obs_repulsion_weight;
+    cost_params.obstacle.scale_factor = settings.obs_scaling_factor;
+    cost_params.obstacle.traj_weight = settings.obs_traj_weight;
+    cost_params.obstacle.power = settings.obs_power;
+    cost_params.obstacle.min_radius = 0.0f;
     cost->setParams(cost_params);
 
     // Setup cost map

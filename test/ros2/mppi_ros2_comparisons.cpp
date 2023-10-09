@@ -103,19 +103,33 @@ protected:
     params.emplace_back(rclcpp::Parameter(node_name + ".critics", critics));
     params.emplace_back(rclcpp::Parameter(node_name + ".temperature", settings.lambda));
     params.emplace_back(rclcpp::Parameter(node_name + ".model_dt", settings.dt));
+    params.emplace_back(rclcpp::Parameter(node_name + ".vx_std", settings.std_dev_v));
+    params.emplace_back(rclcpp::Parameter(node_name + ".vy_std", settings.std_dev_v));
+    params.emplace_back(rclcpp::Parameter(node_name + ".wz_std", settings.std_dev_omega));
+    params.emplace_back(rclcpp::Parameter(node_name + ".vx_max", settings.v_max));
+    params.emplace_back(rclcpp::Parameter(node_name + ".vx_min", settings.v_min));
+    params.emplace_back(rclcpp::Parameter(node_name + ".vy_max", settings.v_max));
+    params.emplace_back(rclcpp::Parameter(node_name + ".wz_max", settings.omega_max));
     params.emplace_back(rclcpp::Parameter(node_name + ".GoalCritic.cost_weight", settings.goal_weight));
     params.emplace_back(rclcpp::Parameter(node_name + ".GoalCritic.cost_power", settings.goal_power));
-    params.emplace_back(rclcpp::Parameter(node_name + ".GoalCritic.threshold_to_consider", settings.goal_dist_threshold));
+    params.emplace_back(
+        rclcpp::Parameter(node_name + ".GoalCritic.threshold_to_consider", settings.goal_dist_threshold));
     params.emplace_back(rclcpp::Parameter(node_name + ".GoalAngleCritic.cost_weight", settings.goal_angle_weight));
     params.emplace_back(rclcpp::Parameter(node_name + ".GoalAngleCritic.cost_power", settings.goal_angle_power));
-    params.emplace_back(rclcpp::Parameter(node_name + ".GoalAngleCritic.threshold_to_consider", settings.goal_dist_threshold));
+    params.emplace_back(
+        rclcpp::Parameter(node_name + ".GoalAngleCritic.threshold_to_consider", settings.goal_dist_threshold));
     params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.cost_power", settings.obs_power));
-    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.repulsion_weight", settings.obs_repulsion_weight));
+    params.emplace_back(
+        rclcpp::Parameter(node_name + ".ObstaclesCritic.repulsion_weight", settings.obs_repulsion_weight));
     params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.critical_weight", settings.obs_traj_weight));
-    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.consider_footprint", settings.consider_footprint));
-    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.near_goal_distance", settings.near_goal_distance));
-    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.inflation_radius", settings.obs_inflation_radius));
-    params.emplace_back(rclcpp::Parameter(node_name + ".ObstaclesCritic.cost_scaling_factor", settings.obs_scaling_factor));
+    params.emplace_back(
+        rclcpp::Parameter(node_name + ".ObstaclesCritic.consider_footprint", settings.consider_footprint));
+    params.emplace_back(
+        rclcpp::Parameter(node_name + ".ObstaclesCritic.near_goal_distance", settings.near_goal_distance));
+    params.emplace_back(
+        rclcpp::Parameter(node_name + ".ObstaclesCritic.inflation_radius", settings.obs_inflation_radius));
+    params.emplace_back(
+        rclcpp::Parameter(node_name + ".ObstaclesCritic.cost_scaling_factor", settings.obs_scaling_factor));
     params.emplace_back(rclcpp::Parameter("controller_frequency", controller_frequency));
     options.parameter_overrides(params);
 
