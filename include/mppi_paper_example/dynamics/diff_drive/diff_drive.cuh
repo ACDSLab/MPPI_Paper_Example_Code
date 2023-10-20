@@ -3,6 +3,8 @@
 
 using namespace MPPI_internal;
 
+#define FASTER_DYN_COMPUTATIONS
+
 struct DiffDriveParams : public DynamicsParams
 {
   enum class StateIndex : int
@@ -25,6 +27,9 @@ struct DiffDriveParams : public DynamicsParams
     X = 0,
     Y,
     YAW,
+#ifdef FASTER_DYN_COMPUTATIONS
+    FILLER,
+#endif
     NUM_OUTPUTS
   };
   float r = 1.0f;
@@ -49,6 +54,14 @@ public:
                          Eigen::Ref<state_array> x_dot);
 
   __device__ inline void computeStateDeriv(float* x, float* u, float* x_dot, float* theta_s);
+
+#ifdef FASTER_DYN_COMPUTATIONS
+  __device__  void step(float* x, float* x_next, float* xdot,
+                        float* u, float* output, float* theta_s, const float t,
+                        const float dt);
+
+  using PARENT_CLASS::step;
+#endif
 
   state_array stateFromMap(const std::map<std::string, float>& map) override;
 };

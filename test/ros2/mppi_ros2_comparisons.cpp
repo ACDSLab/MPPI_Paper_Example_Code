@@ -176,6 +176,7 @@ TEST_P(ROS2MPPITest, DifferentNumSamples)
   }
   printf("ROS2 MPPI with %d rollouts optimization time: %f +- %f ms\n", GetParam(), times.mean(),
          sqrt(times.variance()));
+  printf("\tAverage Optimization Hz: %f Hz\n", 1000.0 / times.mean());
 }
 
 INSTANTIATE_TEST_CASE_P(ROS2MPPIComparisons, ROS2MPPITest,

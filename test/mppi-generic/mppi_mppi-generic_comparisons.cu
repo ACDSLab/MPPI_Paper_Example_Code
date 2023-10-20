@@ -144,7 +144,7 @@ protected:
 using DIFFERENT_CONTROLLERS =
     ::testing::Types<CONTROLLER_TEMPLATE<128>, CONTROLLER_TEMPLATE<256>, CONTROLLER_TEMPLATE<512>,
                      CONTROLLER_TEMPLATE<1024>, CONTROLLER_TEMPLATE<2048>, CONTROLLER_TEMPLATE<4096>,
-                     CONTROLLER_TEMPLATE<6144>, CONTROLLER_TEMPLATE<8192>, CONTROLLER_TEMPLATE<4096 * 4>>;
+                     CONTROLLER_TEMPLATE<6144>, CONTROLLER_TEMPLATE<8192>, CONTROLLER_TEMPLATE<16384>>;
 
 TYPED_TEST_SUITE(MPPIGenericMPPITest, DIFFERENT_CONTROLLERS);
 
@@ -163,7 +163,5 @@ TYPED_TEST(MPPIGenericMPPITest, DifferentNumSamples)
   }
   printf("MPPI-Generic MPPI with %d rollouts optimization time: %f +- %f ms\n",
          this->controller->sampler_->getNumRollouts(), times.mean(), sqrt(times.variance()));
-  auto loop_time_ms = this->plant->getAvgLoopTime();
-  std::cout << "Avg Loop time: " << loop_time_ms << " ms" << std::endl;
-  std::cout << "Average Optimization Hz: " << 1.0f / (loop_time_ms * 1e-3f) << " Hz" << std::endl;
+  printf("\tAverage Optimization Hz: %f Hz\n", 1000.0 / times.mean());
 }
