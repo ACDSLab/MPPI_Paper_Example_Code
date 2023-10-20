@@ -1,3 +1,0 @@
-[submodule "submodules/cnpy"]
-	path = submodules/cnpy
-	url = ../cnpy.git

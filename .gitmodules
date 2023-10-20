@@ -1,3 +1,4 @@
-[submodule "subtree/MPPI-Generic/submodules/cnpy"]
-	path = subtree/MPPI-Generic/submodules/cnpy
-	url = https://github.gatech.edu/ACDS/cnpy.git
+[submodule "submodules/MPPI-Generic"]
+	path = submodules/MPPI-Generic
+	url = https://github.gatech.edu/ACDS/MPPI-Generic.git
+	branch = feature/sampling_distributions_rmppi

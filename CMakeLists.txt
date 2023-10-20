@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.8)
 project(mppi_paper_examples CXX CUDA)
 
-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/subtree/MPPI-Generic/cmake")
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic/cmake")
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.18.0")
   cmake_policy(SET CMP0104 OLD)
   # if (CUDA_VERSION VERSION_GREATER_EQUAL "11.8.0")
@@ -38,9 +38,9 @@ include_directories(SYSTEM
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 if (NOT BUILD_TESTS)
   # WIll be built as part of MPPI-Generic if BUILD_TESTS is true
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/subtree/MPPI-Generic/submodules/cnpy ${CMAKE_BINARY_DIR}/subtree/MPPI-Generic/submodules/cnpy)
+  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic/submodules/cnpy ${CMAKE_BINARY_DIR}/submodules/MPPI-Generic/submodules/cnpy)
 endif()
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/subtree/MPPI-Generic ${CMAKE_BINARY_DIR}/subtree/MPPI-Generic)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic ${CMAKE_BINARY_DIR}/submodules/MPPI-Generic)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
