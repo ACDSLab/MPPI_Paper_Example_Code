@@ -12,6 +12,9 @@ struct DiffDriveParams : public DynamicsParams
     X = 0,
     Y,
     YAW,
+#ifdef FASTER_DYN_COMPUTATIONS
+    FILLER,
+#endif
     NUM_STATES
   };
 
@@ -40,6 +43,7 @@ class DiffDrive : public Dynamics<DiffDrive, DiffDriveParams>
 {
 public:
   using PARENT_CLASS = Dynamics<DiffDrive, DiffDriveParams>;
+  static const int SHARED_MEM_REQUEST_GRD_BYTES = 4;
 
   std::string getDynamicsModelName() const override
   {
@@ -64,6 +68,11 @@ public:
 #endif
 
   state_array stateFromMap(const std::map<std::string, float>& map) override;
+
+  __device__ void initializeDynamics(float* state, float* control, float* output, float* theta_s, float t_0, float dt)
+  {
+  }
+  using PARENT_CLASS::initializeDynamics;
 };
 
 #ifdef __CUDACC__
