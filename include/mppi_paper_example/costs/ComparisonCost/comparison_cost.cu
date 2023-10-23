@@ -14,7 +14,6 @@ COMPARISON_COST::ComparisonCost(cudaStream_t stream)
   this->bindToStream(stream);
 }
 
-
 COMPARISON_COST_TEMPLATE
 COMPARISON_COST::~ComparisonCost()
 {
@@ -45,9 +44,9 @@ __host__ __device__ float COMPARISON_COST::computeStateCost(float* y, int t, flo
 COMPARISON_COST_TEMPLATE
 __host__ __device__ float COMPARISON_COST::distanceToObstacle(float cost, ObstacleParams* p)
 {
-  // this expects a kernel based distance calculation stored in a char where 253 -> 1 -> on an object
-  // and a char value of 1 -> 1/253 -> distant from object
-  float  dist_to_obj = (p->scale_factor * p->min_radius - logf(cost) + logf(253.0f)) / p->scale_factor;
+  // this expects a kernel based distance calculation stored in a char where 253
+  // -> 1 -> on an object and a char value of 1 -> 1/253 -> distant from object
+  float dist_to_obj = (p->scale_factor * p->min_radius - logf(cost) + logf(253.0f)) / p->scale_factor;
 
   if (!p->use_footprint)
   {
@@ -71,12 +70,12 @@ __host__ __device__ float COMPARISON_COST::computeObstacleCost(const float* y, c
   float tex_query = this->tex_helper_->queryTexture(OBSTACLE_LAYER, query);
 
   if (tex_query < 1.0f)
-  { // in free space?
+  {  // in free space?
     return cost;
   }
 
   if (tex_query > params_p->obstacle.LETHAL_OBSTACLE || *crash)
-  { // lethal crash
+  {  // lethal crash
     *crash = 1;
     return params_p->obstacle.collision_cost;
   }

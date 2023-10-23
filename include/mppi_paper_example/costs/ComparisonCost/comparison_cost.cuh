@@ -7,14 +7,14 @@
 
 struct GoalParams
 {
-  float2 pos; // ([m], [m])
+  float2 pos;  // ([m], [m])
   float weight = 1.0f;
   float power = 1.0f;
 };
 
 struct GoalAngleParams
 {
-  float yaw; // [rad]
+  float yaw;  // [rad]
   float weight = 1.0f;
   float power = 1.0f;
 };
@@ -22,10 +22,10 @@ struct GoalAngleParams
 struct ObstacleParams
 {
   float scale_factor = 1.0f;
-  float min_radius = 0.1f;  // [m]
-  float inflation_radius = 0.1f; // [m]
-  float near_goal_distance = 0.5f; // [m]
-  float collision_margin_distance = 0.1f; // [m]
+  float min_radius = 0.1f;                 // [m]
+  float inflation_radius = 0.1f;           // [m]
+  float near_goal_distance = 0.5f;         // [m]
+  float collision_margin_distance = 0.1f;  // [m]
   float collision_cost = 10000.0f;
   float traj_weight = 1.0f;
   float repulsion_weight = 0.0f;
@@ -38,7 +38,7 @@ template <class DYN_PARAMS_T>
 struct ComparisonParams : public CostParams<C_IND_CLASS(DYN_PARAMS_T, NUM_CONTROLS)>
 {
   float obstacle_cost = 1.0f;
-  float goal_distance_threshold = 1000.0f; // [m]
+  float goal_distance_threshold = 1000.0f;  // [m]
   GoalParams goal;
   GoalAngleParams goal_angle;
   ObstacleParams obstacle;
@@ -55,11 +55,23 @@ public:
 
   ComparisonCost(cudaStream_t stream = nullptr);
 
+  void bindToStream(cudaStream_t stream)
+  {
+    if (tex_helper_)
+    {
+      tex_helper_->bindToStream(stream);
+    }
+    PARENT_CLASS::bindToStream(stream);
+  }
+
   ~ComparisonCost();
 
   void GPUSetup();
 
-  std::string getCostFunctionName() { return "ROS2 Comparison Cost";}
+  std::string getCostFunctionName()
+  {
+    return "ROS2 Comparison Cost";
+  }
 
   float computeStateCost(const Eigen::Ref<const output_array> y, int timestep, int* crash_status)
   {
@@ -82,8 +94,10 @@ public:
   __host__ __device__ float computeGoalAngleCost(const float* y, const int t, int* crash, float* theta_c);
 
   __device__ float terminalCost(float* y, float* theta_c);
-protected:
+
   TwoDTextureHelper<float>* tex_helper_ = nullptr;
+
+protected:
 };
 
 #ifdef __CUDACC__

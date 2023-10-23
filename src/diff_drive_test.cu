@@ -1,8 +1,8 @@
 #include <mppi/controllers/MPPI/mppi_controller.cuh>
 #include <mppi/feedback_controllers/DDP/ddp.cuh>
 
-#include <mppi_paper_example/dynamics/diff_drive/diff_drive.cuh>
 #include <mppi_paper_example/costs/diff_drive_cost/diff_drive_cost.cuh>
+#include <mppi_paper_example/dynamics/diff_drive/diff_drive.cuh>
 // #include <mppi/cost_functions/quadratic_cost/quadratic_cost.cuh>
 
 #include <stdio.h>
@@ -27,12 +27,10 @@ using CONTROLLER_T = VanillaMPPIController<DYN_T, COST_T, FB_T, NUM_TIMESTEPS, N
 using CONTROLLER_PARAMS_T = CONTROLLER_T::TEMPLATED_PARAMS;
 using control_array = CONTROLLER_T::control_array;
 
-int main (int argc, char** argv){
+int main(int argc, char** argv)
+{
   float dt = 0.02;
   // set up dynamics
-  float cart_mass = 1.0;
-  float pole_mass = 1.0;
-  float pole_length = 1.0;
   DYN_T* dynamics = new DYN_T();
   // set up cost
   COST_T* cost = new COST_T();

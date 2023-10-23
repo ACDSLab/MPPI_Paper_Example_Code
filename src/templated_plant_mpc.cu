@@ -32,7 +32,8 @@ using CONTROLLER_PARAMS_T = CONTROLLER_T::TEMPLATED_PARAMS;
 
 using PLANT_T = SimpleDynPlant<CONTROLLER_T>;
 
-int main (int argc, char** argv){
+int main(int argc, char** argv)
+{
   float dt = 0.02;
   // set up dynamics
   DYN_T dynamics;
@@ -56,11 +57,13 @@ int main (int argc, char** argv){
   controller_params.lambda_ = 1.0;
 #ifndef USE_NEW_API
   controller_params.control_std_dev_ = DYN_T::control_array::Ones();
-  std::shared_ptr<CONTROLLER_T> controller = std::make_shared<CONTROLLER_T>(&dynamics, &cost, &fb_controller, controller_params);
+  std::shared_ptr<CONTROLLER_T> controller =
+      std::make_shared<CONTROLLER_T>(&dynamics, &cost, &fb_controller, controller_params);
 #else
-  controller_params.dynamics_rollout_dim_= dim3(DYN_BLOCK_X, DYN_BLOCK_Y, 1);
+  controller_params.dynamics_rollout_dim_ = dim3(DYN_BLOCK_X, DYN_BLOCK_Y, 1);
   controller_params.cost_rollout_dim_ = dim3(96, 1, 1);
-  std::shared_ptr<CONTROLLER_T> controller = std::make_shared<CONTROLLER_T>(&dynamics, &cost, &fb_controller, &sampler, controller_params);
+  std::shared_ptr<CONTROLLER_T> controller =
+      std::make_shared<CONTROLLER_T>(&dynamics, &cost, &fb_controller, &sampler, controller_params);
 #endif
 
   PLANT_T plant(controller, (1.0 / dt), 1);
@@ -70,13 +73,14 @@ int main (int argc, char** argv){
   {
     plant.updateState(plant.current_state_, t * dt);
     plant.runControlIteration(&alive);
-    // std::cout << "t: " << t * dt << ", state: " << plant.current_state_.transpose() << std::endl;
+    // std::cout << "t: " << t * dt << ", state: " <<
+    // plant.current_state_.transpose() << std::endl;
   }
 
   std::cout << "Average Optimization time: " << plant.getAvgOptimizationTime() << " ms" << std::endl;
   std::cout << "Last Optimization time: " << plant.getLastOptimizationTime() << " ms" << std::endl;
   std::cout << "Avg Loop time: " << plant.getAvgLoopTime() << " ms" << std::endl;
-  std::cout << "Average Optimization Hz: " << 1.0f / (plant.getAvgOptimizationTime() * 1e-3f) << " ms" << std::endl;
+  std::cout << "Average Optimization Hz: " << 1.0f / (plant.getAvgOptimizationTime() * 1e-3f) << " Hz" << std::endl;
 
   auto control_sequence = controller->getControlSeq();
   std::cout << "State: \n" << plant.current_state_.transpose() << std::endl;

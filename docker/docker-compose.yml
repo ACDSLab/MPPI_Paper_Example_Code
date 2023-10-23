@@ -1,0 +1,45 @@
+version: '3'
+
+# networks:
+#   ros:
+#     driver: bridge
+
+services:
+  ros2_cuda_11_8:
+    build:
+      context: ../
+      dockerfile: docker/ros_cuda.dockerfile
+      target: ros_setup
+      args:
+        CUDA_IMG_VERSION: ${CUDA_IMG_VERSION}
+        GROUP_ID: ${GROUP_ID}
+        GROUP_NAME: ${GROUP_NAME}
+        UBUNTU_NAME: ${UBUNTU_NAME}
+        UBUNTU_VERSION: ${UBUNTU_VERSION}
+        USER_ID: ${USER_ID}
+        USER_NAME: ${USER_NAME}
+        ROS_DISTRO_NAME: iron
+    image: ros2_cuda:${ROS_DISTRO_NAME}_${CUDA_IMG_VERSION}
+    container_name: ros2_cuda_11_8
+    hostname: ros2_cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities:
+              - gpu
+    network_mode: host
+    extra_hosts:
+      - "ros2_cuda:127.0.0.1"
+    environment:
+      - "ROS_HOSTNAME=ros2_cuda"
+      - "DISPLAY=${DISPLAY}"
+      # - "XAUTHORITY=/tmp/.docker.xauth"
+    volumes:
+      #share your x11 socket and permissions to the container
+      - /tmp/.X11-unix:/tmp/.X11-unix:rw
+      - $DATA_DIRECTORY:/data:rw
+      - $HOME_DIRECTORY/.ssh:/home/$USER_NAME/.ssh:ro #share your home with write permissions
+      - $WORKSPACE_DIRECTORY:/home/$USER_NAME/workspaces:rw
+      - $HOME_DIRECTORY/.vimrc:/home/$USER_NAME/.vimrc:rw
+    command: /bin/bash -c "while true; do sleep 1; done"
