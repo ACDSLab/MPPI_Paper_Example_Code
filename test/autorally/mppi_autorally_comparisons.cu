@@ -16,7 +16,7 @@ template <int NUM_ROLLOUTS = 128>
 using CONTROLLER_TEMPLATE = autorally_control::MPPIController<DYN_T, COST_T, NUM_ROLLOUTS, BDIM_X, BDIM_Y>;
 
 template <class CONTROLLER_T>
-class MPPIGenericMPPITest : public ::testing::Test
+class AutorallyMPPITest : public ::testing::Test
 {
 public:
 
@@ -133,22 +133,34 @@ using DIFFERENT_CONTROLLERS =
                      CONTROLLER_TEMPLATE<1024>, CONTROLLER_TEMPLATE<2048>, CONTROLLER_TEMPLATE<4096>,
                      CONTROLLER_TEMPLATE<6144>, CONTROLLER_TEMPLATE<8192>, CONTROLLER_TEMPLATE<16384>>;
 
-TYPED_TEST_SUITE(MPPIGenericMPPITest, DIFFERENT_CONTROLLERS);
+TYPED_TEST_SUITE(AutorallyMPPITest, DIFFERENT_CONTROLLERS);
 
-TYPED_TEST(MPPIGenericMPPITest, DifferentNumSamples)
+TYPED_TEST(AutorallyMPPITest, DifferentNumSamples)
 {
   RunningStats<double> times;
   std::atomic<bool> alive(true);
   DYN_T::state_array state = DYN_T::state_array::Zero();
+  DYN_T::state_array prev_state, state_der;
+  DYN_T::output_array output;
+  DYN_T::control_array u;
+  float dt = this->settings.dt;
+  int query_point = 1;
   for (int t = 0; t < this->settings.num_iterations; t++)
   {
     auto start = std::chrono::steady_clock::now();
     this->controller->computeControl(state);
+    auto u_traj = this->controller->getControlSeq();
+    for (int i = 0; i < DYN_T::CONTROL_DIM; i++)
+    {
+      u[i] = u_traj[query_point * DYN_T::CONTROL_DIM + i];
+    }
+    prev_state = state;
+    this->dynamics->step(prev_state, state, state_der, u, output, t * dt, dt);
     auto end = std::chrono::steady_clock::now();
     double duration = (end - start).count() / 1e6;
     times.add(duration);
   }
-  printf("MPPI-Generic MPPI with %d rollouts optimization time: %f +- %f ms\n",
+  printf("Autorally MPPI with %d rollouts optimization time: %f +- %f ms\n",
          this->controller->NUM_ROLLOUTS, times.mean(), sqrt(times.variance()));
   printf("\tAverage Optimization Hz: %f Hz\n", 1000.0 / times.mean());
 }
