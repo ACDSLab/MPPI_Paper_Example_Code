@@ -1,5 +1,6 @@
 import abc
 import numpy as np
+import time
 
 # installed using `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118`
 import torch
@@ -31,18 +32,25 @@ class DifferentialDriveEnv(EnvBase):
     def __init__(self, settings: Settings, device="cuda", dtype=None, batch_size: torch.Size = None):
         super(DifferentialDriveEnv, self).__init__(device=device, dtype=dtype, batch_size=batch_size)
         self.dt = settings.dt
+        self.goal = np.array([8, 8])
+        self.goal_weight = settings.goal_weight
+        self.goal_power = settings.goal_power
+        self.goal_dist_threshold = settings.goal_dist_threshold
+
+        self.r = 1.0
+        self.L = 1.0
 
         self.state_spec = CompositeSpec(
-                hidden_observation=UnboundedContinuousTensorSpec((4,))
+                hidden_observation=UnboundedContinuousTensorSpec((3,))
         )
         self.observation_spec = CompositeSpec(
-                hidden_observation=UnboundedContinuousTensorSpec((4,))
+                hidden_observation=UnboundedContinuousTensorSpec((3,))
         )
         self.action_spec = CompositeSpec(
                 hidden_observation=UnboundedContinuousTensorSpec((2,))
         )
         self.reward_spec = CompositeSpec(
-                hidden_observation=UnboundedContinuousTensorSpec((1,))
+                reward=UnboundedContinuousTensorSpec((1,))
         )
 
     @classmethod
@@ -50,21 +58,6 @@ class DifferentialDriveEnv(EnvBase):
         return super().__new__(
             cls, *args, _inplace_update=False, _batch_locked=False, **kwargs
         )
-
-    def _step(
-        self,
-        tensordict: TensorDict,
-    ) -> TensorDict:
-        # step method requires to be immutable
-        print(tensordict)
-        tensordict_out = tensordict.clone(recurse=False)
-        # # run dynamics and cost on given state and action
-        self.dynamics(tensordict_out)
-        # cost(tensordict_out)
-        return tensordict_out.select(
-                *self.observation_spec.keys(),
-                *self.full_reward_spec.keys(),
-                strict=False)
 
     # @abc.abstractmethod
     def _reset(self, tensordict: TensorDict, **kwargs) -> TensorDict:
@@ -83,33 +76,86 @@ class DifferentialDriveEnv(EnvBase):
         print("Dynamics and Cost function do not use seed")
         return seed
 
+    def _step(
+        self,
+        tensordict: TensorDict,
+    ) -> TensorDict:
+        # step method requires to be immutable
+        tensordict_out = tensordict.clone(recurse=False)
+
+        # Ensure inputs are always [batch size, dim]
+        if len(tensordict.get("hidden_observation").shape) == 1:
+            for key in tensordict_out.keys():
+                temp_vec = torch.unsqueeze(tensordict_out.get(key), dim=0)
+                tensordict_out.set(key, temp_vec)
+        # # run dynamics and cost on given state and action
+        self.dynamics(tensordict_out)
+        self.cost(tensordict_out)
+
+        # set back to original dimensions
+        if len(tensordict.get("hidden_observation").shape) == 1:
+            for key in tensordict_out.keys():
+                temp_vec = torch.squeeze(tensordict_out.get(key), dim=0)
+                tensordict_out.set(key, temp_vec)
+        return tensordict_out.select(
+                *self.observation_spec.keys(),
+                *self.full_reward_spec.keys(),
+                strict=False)
+
     def dynamics(self, tensordict: TensorDict):
         u = tensordict.get("action")
         curr_state = tensordict.get("hidden_observation")
         #TODO Implement differential dynamics
-        print (f"State:\n{curr_state},\nU:\n{u}")
-        self.curr_state[0] = self.curr_state[0] + self.dt
+        next_state = curr_state
+        next_state[:, 0] += self.r / 2 * (u[:, 0] + u[:, 1]) * torch.cos(curr_state[:, 2]) * self.dt
+        next_state[:, 1] += self.r / 2 * (u[:, 0] + u[:, 1]) * torch.sin(curr_state[:, 2]) * self.dt
+        next_state[:, 2] += self.r / self.L * (u[:, 0] - u[:, 1]) * self.dt
+
+        tensordict.set("hidden_observation", next_state)
 
     def cost(self, tensordict: TensorDict):
-        print (f"Input: {tensordict}")
         #TODO Implement cost function located in include/mppi_paper_example/costs/ComparisonCost/comparison_cost.cu
+        curr_x = tensordict.get("hidden_observation")
+        curr_u = tensordict.get("action")
+        x_diff = curr_x[:, 0] - self.goal[0]
+        y_diff = curr_x[:, 1] - self.goal[1]
+        dist = torch.hypot(x_diff, y_diff)
+
+        reward = torch.where(dist < self.goal_dist_threshold, torch.pow(self.goal_weight * dist, self.goal_power), 0)
+
+        # negate as we are calculating a cost, not a reward
+        tensordict.set("reward", -reward)
+
+class BaselineExtractor (nn.Module):
+    def __init__(self, in_key = "reward"):
+        super().__init__()
+        self.in_key = in_key
+
+    def forward(self, x):
+        output = x.get("next").get(self.in_key)
+        baseline = output - torch.min(output)
+        x.set("advantage", baseline)
+        return x
+
 
 if __name__ == "__main__":
     world_env = DifferentialDriveEnv(settings=common_settings)
-    value_net = nn.Linear(4, 1)
-    value_net = ValueOperator(value_net, in_keys=["hidden_observation"])
-    adv = TDLambdaEstimator(
-        gamma=0.99,
-        lmbda=0.95,
-        value_network=value_net,
-    )
+    value_net = nn.Linear(1, 1)
+    value_net = ValueOperator(value_net, in_keys=["reward"])
+
+    adv = BaselineExtractor(in_key = "reward")
     # Build a planner and use it as actor
+    num_rollouts = 2048
     planner = MPPIPlanner(
         world_env,
         adv,
         temperature=1.0,
-        planning_horizon=10,
+        planning_horizon=100,
         optim_steps=1,
-        num_candidates=7,
-        top_k=3)
-    world_env.rollout(5, planner)
+        num_candidates=num_rollouts,
+        top_k=num_rollouts)
+
+    start = time.time()
+    world_env.rollout(1, planner)
+    end = time.time()
+    print(f"Python MPPI took {(end - start) * 1000} ms")
