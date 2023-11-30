@@ -8,6 +8,7 @@ import torch.nn as nn
 
 from collections import namedtuple
 from tensordict import TensorDict
+from tqdm import tqdm
 
 # installed with `pip3 install torchrl`
 from torchrl.data import CompositeSpec, UnboundedContinuousTensorSpec
@@ -138,24 +139,59 @@ class BaselineExtractor (nn.Module):
         return x
 
 
+class RunningStats:
+    def __init__(self):
+        self.clear()
+
+    def add (self, val: float):
+        self.count += 1
+        if self.count == 1:
+            self.mean_ = val
+        else:
+            new_mean = self.mean_ + (val - self.mean_) / self.count
+            new_variance = self.variance_ + (val - self.mean_) * (val - new_mean)
+            self.mean_ = new_mean
+            self.variance_ = new_variance
+
+    def mean(self):
+        return self.mean_ if self.count > 0 else 0.0
+
+    def variance(self):
+        return self.variance_ / (self.count - 1) if self.count > 1 else 0.0
+
+    def clear(self):
+        self.mean_ = 0
+        self.variance_ = 0
+        self.count = 0
+
+
 if __name__ == "__main__":
     world_env = DifferentialDriveEnv(settings=common_settings)
     value_net = nn.Linear(1, 1)
     value_net = ValueOperator(value_net, in_keys=["reward"])
 
     adv = BaselineExtractor(in_key = "reward")
+    running_stats = RunningStats()
+    num_iterations = 1000
     # Build a planner and use it as actor
-    num_rollouts = 2048
-    planner = MPPIPlanner(
-        world_env,
-        adv,
-        temperature=1.0,
-        planning_horizon=100,
-        optim_steps=1,
-        num_candidates=num_rollouts,
-        top_k=num_rollouts)
-
-    start = time.time()
-    world_env.rollout(1, planner)
-    end = time.time()
-    print(f"Python MPPI took {(end - start) * 1000} ms")
+    num_rollouts = [128, 256, 512, 1024, 2048, 4096, 6144, 8192, 16384]
+    num_rollouts.reverse()
+    for rollout_i in num_rollouts:
+        planner = MPPIPlanner(
+            world_env,
+            adv,
+            temperature=1.0,
+            planning_horizon=100,
+            optim_steps=1,
+            num_candidates=rollout_i,
+            top_k=rollout_i)
+        running_stats.clear()
+        for i in tqdm(range(num_iterations)):
+            start = time.time()
+            world_env.rollout(1, planner)
+            end = time.time()
+            running_stats.add(end - start)
+        print("Torchrl MPPI with {} rollouts optimization time: {} +- {} ms".format(
+                rollout_i, running_stats.mean() * 1000, np.sqrt(running_stats.variance()) * 1000
+            ))
+        print("\tAverage Optimization Hz: {} Hz".format(1.0 / running_stats.mean()))
