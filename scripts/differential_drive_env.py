@@ -37,9 +37,35 @@ class DifferentialDriveEnv(EnvBase):
         self.goal_weight = settings.goal_weight
         self.goal_power = settings.goal_power
         self.goal_dist_threshold = settings.goal_dist_threshold
+        self.goal_yaw = 0
+        self.angle_weight = 1
+        self.angle_power = 1
 
         self.r = 1.0
         self.L = 1.0
+        self.rows = int(settings.length_x / settings.resolution)
+        self.cols = int(settings.length_y / settings.resolution)
+        self.resolution = settings.resolution
+        self.obs_scale_factor = 1.0
+        self.min_radius = 0.1
+        self.lethal_obstacle = 1e10
+        self.collision_cost = 10000.0
+        self.collision_margin_dist = 0.1
+        self.obs_traj_weight = 20
+        self.obs_repulsion_weight = 0.0
+        self.inflation_radius = 0.1
+        self.obs_power = 1
+        obstacle_map = np.zeros(shape=(self.rows, self.cols))
+        for obstacle in settings.obstacles:
+            obs_x = int(obstacle.x / settings.resolution)
+            obs_y = int(obstacle.y / settings.resolution)
+            obs_size = int(obstacle.size / settings.resolution)
+            for row in range(obs_x, obs_x + obs_size):
+                for col in range(obs_y, obs_y + obs_size):
+                    obstacle_map[row, col] = settings.obstacle_cost
+
+        self.map = torch.tensor(obstacle_map, device=self.device)
+        print(self.map)
 
         self.state_spec = CompositeSpec(
                 hidden_observation=UnboundedContinuousTensorSpec((3,))
@@ -122,7 +148,37 @@ class DifferentialDriveEnv(EnvBase):
         y_diff = curr_x[:, 1] - self.goal[1]
         dist = torch.hypot(x_diff, y_diff)
 
-        reward = torch.where(dist < self.goal_dist_threshold, torch.pow(self.goal_weight * dist, self.goal_power), 0)
+        yaw_diff = (curr_x[:, 2] - self.goal_yaw + np.pi) % 2 * np.pi - np.pi
+        # query map
+        normalized_x = curr_x[:, 0] / self.resolution - 0.5
+        normalized_y = curr_x[:, 1] / self.resolution - 0.5
+        normalized_x = torch.where(normalized_x > self.rows - 1, self.rows - 1, normalized_x)
+        normalized_x = torch.where(normalized_x < 0, 0, normalized_x)
+        normalized_y = torch.where(normalized_y > self.cols - 1, self.cols - 1, normalized_y)
+        normalized_y = torch.where(normalized_y < 0, 0, normalized_y)
+        max_x_val = torch.tensor(self.rows - 2, device=self.device)
+        max_y_val = torch.tensor(self.cols - 2, device=self.device)
+        x_min = torch.minimum(normalized_x, max_x_val).to(torch.int)
+        y_min = torch.minimum(normalized_y, max_y_val).to(torch.int)
+        x_max = x_min + 1
+        y_max = y_min + 1
+        q_11 = torch.tensor([self.map[x, y] for x, y in zip(x_min, y_min)], device=self.device)
+        q_12 = torch.tensor([self.map[x, y] for x, y in zip(x_max, y_min)], device=self.device)
+        q_21 = torch.tensor([self.map[x, y] for x, y in zip(x_min, y_max)], device=self.device)
+        q_22 = torch.tensor([self.map[x, y] for x, y in zip(x_max, y_max)], device=self.device)
+        y_min_interp = q_11 * ((x_max - normalized_x) / (x_max - x_min)) * q_12 * ((normalized_x - x_min) / (x_max - x_min))
+        y_max_interp = q_21 * ((x_max - normalized_x) / (x_max - x_min)) * q_22 * ((normalized_x - x_min) / (x_max - x_min))
+        obstacle_map_cost = y_min_interp * ((y_max - normalized_y) / (y_max - y_min)) + y_max_interp * ((normalized_y - y_min) / (y_max - y_min))
+
+        distance_obstacle = (self.obs_scale_factor * self.min_radius - torch.log(obstacle_map_cost) + np.log(253.0)) / self.obs_scale_factor
+        obstacle_cost = torch.where(distance_obstacle < self.collision_margin_dist, self.obs_traj_weight * (self.collision_margin_dist - distance_obstacle), self.obs_repulsion_weight * (self.inflation_radius - distance_obstacle))
+        obstacle_cost = torch.pow(obstacle_cost, self.obs_power)
+        obstacle_cost = torch.where(obstacle_map_cost > self.lethal_obstacle, self.collision_cost, distance_obstacle)
+        obstacle_cost = torch.where(obstacle_map_cost < 1, 0, obstacle_cost)
+
+        # Combine costs
+        goal_cost = torch.pow(self.goal_weight * dist, self.goal_power) + torch.pow(self.angle_weight * torch.abs(yaw_diff), self.angle_power)
+        reward = torch.where(dist < self.goal_dist_threshold, goal_cost, 0) + obstacle_cost
 
         # negate as we are calculating a cost, not a reward
         tensordict.set("reward", -reward)
@@ -164,8 +220,8 @@ class RunningStats:
         self.variance_ = 0
         self.count = 0
 
-
-if __name__ == "__main__":
+@torch.no_grad()
+def main():
     world_env = DifferentialDriveEnv(settings=common_settings)
     value_net = nn.Linear(1, 1)
     value_net = ValueOperator(value_net, in_keys=["reward"])
@@ -195,3 +251,6 @@ if __name__ == "__main__":
                 rollout_i, running_stats.mean() * 1000, np.sqrt(running_stats.variance()) * 1000
             ))
         print("\tAverage Optimization Hz: {} Hz".format(1.0 / running_stats.mean()))
+
+if __name__ == "__main__":
+    main()
