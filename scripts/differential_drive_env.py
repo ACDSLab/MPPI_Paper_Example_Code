@@ -162,10 +162,10 @@ class DifferentialDriveEnv(EnvBase):
         y_min = torch.minimum(normalized_y, max_y_val).to(torch.int)
         x_max = x_min + 1
         y_max = y_min + 1
-        q_11 = torch.tensor([self.map[x, y] for x, y in zip(x_min, y_min)], device=self.device)
-        q_12 = torch.tensor([self.map[x, y] for x, y in zip(x_max, y_min)], device=self.device)
-        q_21 = torch.tensor([self.map[x, y] for x, y in zip(x_min, y_max)], device=self.device)
-        q_22 = torch.tensor([self.map[x, y] for x, y in zip(x_max, y_max)], device=self.device)
+        q_11 = torch.index_select(self.map.flatten(), 0, x_min + self.cols * y_min)
+        q_12 = torch.index_select(self.map.flatten(), 0, x_max + self.cols * y_min)
+        q_21 = torch.index_select(self.map.flatten(), 0, x_min + self.cols * y_max)
+        q_22 = torch.index_select(self.map.flatten(), 0, x_max + self.cols * y_max)
         y_min_interp = q_11 * ((x_max - normalized_x) / (x_max - x_min)) * q_12 * ((normalized_x - x_min) / (x_max - x_min))
         y_max_interp = q_21 * ((x_max - normalized_x) / (x_max - x_min)) * q_22 * ((normalized_x - x_min) / (x_max - x_min))
         obstacle_map_cost = y_min_interp * ((y_max - normalized_y) / (y_max - y_min)) + y_max_interp * ((normalized_y - y_min) / (y_max - y_min))
