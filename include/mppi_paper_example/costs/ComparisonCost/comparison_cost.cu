@@ -67,7 +67,7 @@ __host__ __device__ float COMPARISON_COST::computeObstacleCost(const float* y, c
   float3 query = make_float3(y[O_IND_CLASS(DYN_P, X)], y[O_IND_CLASS(DYN_P, Y)], 0.0f);
   const float dist_m = hypotf(query.x - params_p->goal.pos.x, query.y - params_p->goal.pos.y);
   bool near_goal = dist_m < params_p->obstacle.near_goal_distance;
-  float tex_query = this->tex_helper_->queryTexture(OBSTACLE_LAYER, query);
+  float tex_query = this->tex_helper_->queryTextureAtWorldPose(OBSTACLE_LAYER, query);
 
   if (tex_query < 1.0f)
   {  // in free space?
