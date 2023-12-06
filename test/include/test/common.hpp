@@ -1,4 +1,8 @@
 #include <chrono>
+#include <ctime>
+#include <fstream>
+
+#include <stdlib.h>
 
 struct CommonSettings
 {
@@ -90,3 +94,41 @@ protected:
   T variance_ms_ = 0.0;
   size_t count = 0;
 };
+
+std::string getCPUModelName()
+{
+  std::string cpu_name;
+  FILE* cpuinfo = fopen("/proc/cpuinfo", "rb");
+  if (cpuinfo == NULL)
+    exit(EXIT_FAILURE);
+  char* line = NULL;
+  size_t len = 0;
+  ssize_t read;
+  std::string search_string = "model name";
+  while ((read = getline(&line, &len, cpuinfo)) != -1)
+  {
+    cpu_name = std::string(line);
+    std::size_t found = cpu_name.find(search_string);
+    if (found != std::string::npos)
+    {
+      found = cpu_name.find(": ");
+      cpu_name = cpu_name.substr(found + 2, cpu_name.size() - 3 - found);
+      break;
+    }
+  }
+
+  free(line);
+  fclose(cpuinfo);
+  return cpu_name;
+}
+
+void createNewCSVFile(std::string prefix, std::ofstream& new_file)
+{
+  // Create timestamp
+  std::time_t t = std::time(nullptr);
+  const int buf_size = 100;
+  char time_buf[buf_size];
+  std::strftime(time_buf, buf_size, "_%F_%H-%M-%S.csv", std::localtime(&t));
+  new_file.open(prefix + std::string(time_buf));
+  new_file << "Processor,GPU,Method,Num Rollouts,Mean Optimization Time (ms), Std. Dev. Time (ms)\n";
+}

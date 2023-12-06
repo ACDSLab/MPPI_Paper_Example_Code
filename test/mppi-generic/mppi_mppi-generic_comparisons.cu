@@ -18,6 +18,46 @@ using SAMPLING_T = mppi::sampling_distributions::GaussianDistribution<DYN_T::DYN
 template <int NUM_ROLLOUTS = 128>
 using CONTROLLER_TEMPLATE = VanillaMPPIController<DYN_T, COST_T, FB_T, NUM_TIMESTEPS, NUM_ROLLOUTS, SAMPLING_T>;
 
+class CSVWritingEnvironment : public ::testing::Environment
+{
+public:
+  static std::ofstream csv_file;
+  static std::string cpu_name;
+  static std::string gpu_name;
+  ~CSVWritingEnvironment() override {}
+  void SetUp() override {
+    createNewCSVFile("mppi_generic_results", csv_file);
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, 0);
+    gpu_name = std::string(deviceProp.name);
+
+    // get CPU name
+    cpu_name = getCPUModelName();
+  }
+
+  void TearDown() override{
+    csv_file.close();
+  }
+
+  static std::string getGPUName()
+  {
+    return gpu_name;
+  }
+
+  static std::string getCPUName()
+  {
+    return cpu_name;
+  }
+};
+
+// Iniitialize static variables
+std::ofstream CSVWritingEnvironment::csv_file;
+std::string CSVWritingEnvironment::cpu_name = "N/A";
+std::string CSVWritingEnvironment::gpu_name = "N/A";
+
+// Register Environment
+testing::Environment* const csv_env = testing::AddGlobalTestEnvironment(new CSVWritingEnvironment);
+
 template <class CONTROLLER_T>
 class MPPIGenericMPPITest : public ::testing::Test
 {
@@ -161,6 +201,11 @@ TYPED_TEST(MPPIGenericMPPITest, DifferentNumSamples)
     double duration = (end - start).count() / 1e6;
     times.add(duration);
   }
+  // Save to CSV File
+  CSVWritingEnvironment::csv_file << CSVWritingEnvironment::getCPUName()
+      << "," << CSVWritingEnvironment::getGPUName() << ",MPPI-Generic,"
+      << this->controller->sampler_->getNumRollouts() << "," << times.mean()
+      << "," << sqrt(times.variance()) << "\n";
   printf("MPPI-Generic MPPI with %d rollouts optimization time: %f +- %f ms\n",
          this->controller->sampler_->getNumRollouts(), times.mean(), sqrt(times.variance()));
   printf("\tAverage Optimization Hz: %f Hz\n", 1000.0 / times.mean());

@@ -1,6 +1,10 @@
+#! /usr/bin/env python3
 import abc
+import datetime
 import math
 import numpy as np
+import re
+import subprocess
 import time
 
 # installed using `pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118`
@@ -82,6 +86,14 @@ def comparisionCost(x: torch.Tensor, u: torch.Tensor, obstacle_map: torch.Tensor
     # negate as we are calculating a cost, not a reward
     return -cost
     # tensordict.set("reward", -cost)
+
+def get_processor_name():
+    command = "cat /proc/cpuinfo"
+    all_info = subprocess.check_output(command, shell=True).decode().strip()
+    for line in all_info.split("\n"):
+        if "model name" in line:
+            return re.sub(".*model name.*: ", "", line, 1)
+    return "N/A"
 
 class DifferentialDriveEnv(EnvBase):
     # TODO: figure out how to get batch size [32] to work
@@ -246,32 +258,40 @@ def main():
     value_net = ValueOperator(value_net, in_keys=["reward"])
 
     adv = BaselineExtractor(in_key = "reward")
-    print(torch.cuda.get_device_name())
+    cpu_name = get_processor_name()
+    gpu_name = torch.cuda.get_device_name()
     running_stats = RunningStats()
     num_iterations = 1000
     # Build a planner and use it as actor
     num_rollouts = [128, 256, 512, 1024, 2048, 4096, 6144, 8192, 16384]
     num_rollouts.reverse()
-    for rollout_i in num_rollouts:
-        planner = MPPIPlanner(
-            world_env,
-            adv,
-            temperature=1.0,
-            planning_horizon=100,
-            optim_steps=1,
-            num_candidates=rollout_i,
-            top_k=rollout_i)
-        running_stats.clear()
-        world_env.rollout(1, planner) # run outside of timing as the first run is slower than the following
-        for i in tqdm(range(num_iterations)):
-            start = time.time()
-            world_env.rollout(1, planner)
-            end = time.time()
-            running_stats.add(end - start)
-        print("Torchrl MPPI with {} rollouts optimization time: {} +- {} ms".format(
-                rollout_i, running_stats.mean() * 1000, np.sqrt(running_stats.variance()) * 1000
-            ))
-        print("\tAverage Optimization Hz: {} Hz".format(1.0 / running_stats.mean()))
+    date = datetime.datetime.now().strftime("%F_%H-%M-%S")
+    filename = "torchrl_results_" + date + ".csv"
+    print(filename)
+    with open(filename, 'w') as file:
+        file.write("Processor,GPU,Method,Num Rollouts, Mean Optimization Times (ms), Std. Dev. Time (ms)\n")
+        for rollout_i in num_rollouts:
+            planner = MPPIPlanner(
+                world_env,
+                adv,
+                temperature=1.0,
+                planning_horizon=100,
+                optim_steps=1,
+                num_candidates=rollout_i,
+                top_k=rollout_i)
+            running_stats.clear()
+            world_env.rollout(1, planner) # run outside of timing as the first run is slower than the following
+            for i in tqdm(range(num_iterations)):
+                start = time.time()
+                world_env.rollout(1, planner)
+                end = time.time()
+                running_stats.add(end - start)
+            file.write("{},{},torchrl,{},{},{}\n".format(cpu_name, gpu_name,
+                rollout_i, running_stats.mean() * 1000, np.sqrt(running_stats.variance()) * 1000))
+            print("Torchrl MPPI with {} rollouts optimization time: {} +- {} ms".format(
+                    rollout_i, running_stats.mean() * 1000, np.sqrt(running_stats.variance()) * 1000
+                ))
+            print("\tAverage Optimization Hz: {} Hz".format(1.0 / running_stats.mean()))
 
 if __name__ == "__main__":
     main()

@@ -17,6 +17,43 @@ void addObstacle(nav2_costmap_2d::Costmap2D* costmap, unsigned int upper_left_co
   }
 }
 
+class CSVWritingEnvironment : public ::testing::Environment
+{
+public:
+  static std::ofstream csv_file;
+  static std::string cpu_name;
+  static std::string gpu_name;
+  ~CSVWritingEnvironment() override {}
+  void SetUp() override {
+    createNewCSVFile("ros2_results", csv_file);
+
+    // get CPU name
+    cpu_name = getCPUModelName();
+  }
+
+  void TearDown() override{
+    csv_file.close();
+  }
+
+  static std::string getGPUName()
+  {
+    return gpu_name;
+  }
+
+  static std::string getCPUName()
+  {
+    return cpu_name;
+  }
+};
+
+// Iniitialize static variables
+std::ofstream CSVWritingEnvironment::csv_file;
+std::string CSVWritingEnvironment::cpu_name = "N/A";
+std::string CSVWritingEnvironment::gpu_name = "N/A";
+
+// Register Environment
+testing::Environment* const csv_env = testing::AddGlobalTestEnvironment(new CSVWritingEnvironment);
+
 class ROS2MPPITest : public ::testing::TestWithParam<int>
 {
 protected:
@@ -174,6 +211,11 @@ TEST_P(ROS2MPPITest, DifferentNumSamples)
     double duration = (end - start).count() / 1e6;
     times.add(duration);
   }
+  // Save to CSV File
+  CSVWritingEnvironment::csv_file << CSVWritingEnvironment::getCPUName()
+      << "," << CSVWritingEnvironment::getGPUName() << ",ros2,"
+      << GetParam() << "," << times.mean()
+      << "," << sqrt(times.variance()) << "\n";
   printf("ROS2 MPPI with %d rollouts optimization time: %f +- %f ms\n", GetParam(), times.mean(),
          sqrt(times.variance()));
   printf("\tAverage Optimization Hz: %f Hz\n", 1000.0 / times.mean());
