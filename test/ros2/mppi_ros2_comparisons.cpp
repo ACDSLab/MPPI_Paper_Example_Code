@@ -215,7 +215,7 @@ TEST_P(ROS2MPPITest, DifferentNumSamples)
   CSVWritingEnvironment::csv_file << CSVWritingEnvironment::getCPUName()
       << "," << CSVWritingEnvironment::getGPUName() << ",ros2,"
       << GetParam() << "," << times.mean()
-      << "," << sqrt(times.variance()) << "\n";
+      << "," << sqrt(times.variance()) << std::endl;
   printf("ROS2 MPPI with %d rollouts optimization time: %f +- %f ms\n", GetParam(), times.mean(),
          sqrt(times.variance()));
   printf("\tAverage Optimization Hz: %f Hz\n", 1000.0 / times.mean());

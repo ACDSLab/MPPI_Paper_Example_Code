@@ -103,9 +103,8 @@ std::string getCPUModelName()
     exit(EXIT_FAILURE);
   char* line = NULL;
   size_t len = 0;
-  ssize_t read;
   std::string search_string = "model name";
-  while ((read = getline(&line, &len, cpuinfo)) != -1)
+  while (getline(&line, &len, cpuinfo) != -1)
   {
     cpu_name = std::string(line);
     std::size_t found = cpu_name.find(search_string);

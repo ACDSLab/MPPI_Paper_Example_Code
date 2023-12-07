@@ -68,7 +68,7 @@ public:
 
   void GPUSetup();
 
-  std::string getCostFunctionName()
+  std::string getCostFunctionName() const override
   {
     return "ROS2 Comparison Cost";
   }

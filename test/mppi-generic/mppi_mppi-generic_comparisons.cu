@@ -205,7 +205,7 @@ TYPED_TEST(MPPIGenericMPPITest, DifferentNumSamples)
   CSVWritingEnvironment::csv_file << CSVWritingEnvironment::getCPUName()
       << "," << CSVWritingEnvironment::getGPUName() << ",MPPI-Generic,"
       << this->controller->sampler_->getNumRollouts() << "," << times.mean()
-      << "," << sqrt(times.variance()) << "\n";
+      << "," << sqrt(times.variance()) << std::endl;
   printf("MPPI-Generic MPPI with %d rollouts optimization time: %f +- %f ms\n",
          this->controller->sampler_->getNumRollouts(), times.mean(), sqrt(times.variance()));
   printf("\tAverage Optimization Hz: %f Hz\n", 1000.0 / times.mean());

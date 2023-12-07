@@ -204,7 +204,7 @@ TYPED_TEST(AutorallyMPPITest, DifferentNumSamples)
   CSVWritingEnvironment::csv_file << CSVWritingEnvironment::getCPUName()
       << "," << CSVWritingEnvironment::getGPUName() << ",autorally,"
       << this->controller->NUM_ROLLOUTS << "," << times.mean()
-      << "," << sqrt(times.variance()) << "\n";
+      << "," << sqrt(times.variance()) << std::endl;
   printf("Autorally MPPI with %d rollouts optimization time: %f +- %f ms\n",
          this->controller->NUM_ROLLOUTS, times.mean(), sqrt(times.variance()));
   printf("\tAverage Optimization Hz: %f Hz\n", 1000.0 / times.mean());
