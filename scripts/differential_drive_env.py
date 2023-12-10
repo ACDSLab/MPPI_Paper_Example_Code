@@ -264,12 +264,12 @@ def main():
     num_iterations = 1000
     # Build a planner and use it as actor
     num_rollouts = [128, 256, 512, 1024, 2048, 4096, 6144, 8192, 16384]
-    num_rollouts.reverse()
+    # num_rollouts.reverse()
     date = datetime.datetime.now().strftime("%F_%H-%M-%S")
     filename = "torchrl_results_" + date + ".csv"
     print(filename)
-    with open(filename, 'w') as file:
-        file.write("Processor,GPU,Method,Num Rollouts, Mean Optimization Times (ms), Std. Dev. Time (ms)\n")
+    with open(filename, 'w', buffering=0) as file:
+        file.write("Processor,GPU,Method,Num Rollouts,Mean Optimization Time (ms), Std. Dev. Time (ms)\n")
         for rollout_i in num_rollouts:
             planner = MPPIPlanner(
                 world_env,
@@ -280,12 +280,15 @@ def main():
                 num_candidates=rollout_i,
                 top_k=rollout_i)
             running_stats.clear()
-            world_env.rollout(1, planner) # run outside of timing as the first run is slower than the following
+            # run planner outside of timing as the first run is slower than the following
+            for i in range(20):
+                world_env.rollout(1, planner)
             for i in tqdm(range(num_iterations)):
                 start = time.time()
                 world_env.rollout(1, planner)
                 end = time.time()
                 running_stats.add(end - start)
+            del planner
             file.write("{},{},torchrl,{},{},{}\n".format(cpu_name, gpu_name,
                 rollout_i, running_stats.mean() * 1000, np.sqrt(running_stats.variance()) * 1000))
             print("Torchrl MPPI with {} rollouts optimization time: {} +- {} ms".format(
