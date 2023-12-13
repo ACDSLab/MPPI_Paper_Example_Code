@@ -17,7 +17,7 @@ public:
 
   DiffDriveCost(cudaStream_t stream = nullptr);
 
-  std::string getCostFunctionName()
+  std::string getCostFunctionName() const override
   {
     return "DiffDrive Cost";
   }

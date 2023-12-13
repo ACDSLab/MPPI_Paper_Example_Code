@@ -121,13 +121,18 @@ std::string getCPUModelName()
   return cpu_name;
 }
 
-void createNewCSVFile(std::string prefix, std::ofstream& new_file)
+std::string getTimestamp()
 {
   // Create timestamp
   std::time_t t = std::time(nullptr);
   const int buf_size = 100;
   char time_buf[buf_size];
-  std::strftime(time_buf, buf_size, "_%F_%H-%M-%S.csv", std::localtime(&t));
-  new_file.open(prefix + std::string(time_buf));
+  std::strftime(time_buf, buf_size, "%F_%H-%M-%S", std::localtime(&t));
+  return std::string(time_buf);
+}
+
+void createNewCSVFile(std::string prefix, std::ofstream& new_file)
+{
+  new_file.open(prefix + "_" + getTimestamp() + ".csv");
   new_file << "Processor,GPU,Method,Num Rollouts,Mean Optimization Time (ms), Std. Dev. Time (ms)\n";
 }

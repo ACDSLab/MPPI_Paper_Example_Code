@@ -170,6 +170,8 @@ protected:
     HANDLE_ERROR(cudaStreamCreate(&stream));
 
     controller = std::make_shared<CONTROLLER_T>(dynamics, cost, fb_controller, sampler, controller_params, stream);
+    controller->setLogLevel(mppi::util::LOG_LEVEL::DEBUG);
+    controller->chooseAppropriateKernel();
 
     plant = new PLANT_T(controller, 1.0f / settings.dt, 1);
   }
@@ -178,6 +180,10 @@ protected:
   {
     delete plant;
     controller.reset();
+    delete fb_controller;
+    delete cost;
+    delete dynamics;
+    delete sampler;
   }
 };
 

@@ -41,6 +41,7 @@ if (NOT BUILD_TESTS)
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic/submodules/cnpy ${CMAKE_BINARY_DIR}/submodules/MPPI-Generic/submodules/cnpy)
 endif()
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic ${CMAKE_BINARY_DIR}/submodules/MPPI-Generic)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic/submodules/cnpy)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
 

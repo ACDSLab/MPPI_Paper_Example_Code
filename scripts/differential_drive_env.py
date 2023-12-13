@@ -268,7 +268,7 @@ def main():
     date = datetime.datetime.now().strftime("%F_%H-%M-%S")
     filename = "torchrl_results_" + date + ".csv"
     print(filename)
-    with open(filename, 'w', buffering=0) as file:
+    with open(filename, 'w') as file:
         file.write("Processor,GPU,Method,Num Rollouts,Mean Optimization Time (ms), Std. Dev. Time (ms)\n")
         for rollout_i in num_rollouts:
             planner = MPPIPlanner(
