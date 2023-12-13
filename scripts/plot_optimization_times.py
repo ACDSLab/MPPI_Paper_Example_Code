@@ -5,6 +5,12 @@ import numpy as np
 import os
 import pandas as pd
 
+import matplotlib
+matplotlib.rcParams["pdf.fonttype"] = 42
+matplotlib.rcParams["ps.fonttype"] = 42
+matplotlib.rcParams["axes.spines.top"] = False
+matplotlib.rcParams["axes.spines.right"] = False
+
 def plot_csv_files(loc):
     print("starting folder: {}".format(loc))
     csv_files = []
@@ -41,11 +47,12 @@ def plot_csv_files(loc):
     plt.xscale("log")
     plt.yscale("log")
     plt.xlabel("Number of Rollouts")
-    plt.ylabel("Optimization Times (ms)")
+    plt.ylabel("Optimization Times [ms]")
     plt.title("Results for CPU: {}, GPU: {}".format(cpu_names[0], gpu_names[0]))
     plt.tight_layout()
     # plt.legend(df["Method"].values)
     # ax.legend(title="Method")
+    plt.savefig("test_mppi_approach_plot.pdf", bbox_inches="tight")
     plt.show()
 
     # for csv_i in csv_files:

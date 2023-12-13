@@ -6,6 +6,10 @@ import os
 import pandas as pd
 import re
 
+import matplotlib
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
+
 
 def plot_npy_files(file_names):
     all_data = {}
@@ -53,20 +57,29 @@ def plot_npy_files(file_names):
                 all_data[method][rollout_count][data_type] = data
     fig, axes = plt.subplots(3, sharex=True)
     fig.set_tight_layout(True)
-    axes[0].set_ylabel("Accel (m/(s * s)")
-    axes[1].set_ylabel("Position (m)")
+    for axis in axes:
+        axis.spines["top"].set_visible(False)
+        axis.spines["right"].set_visible(False)
+    axes[0].set_ylabel("Accel [$m / s^2$]")
+    axes[1].set_ylabel("Position [m]")
     axes[2].set_ylabel("Cost")
     axes[2].set_xlabel("Time")
+    colors = ["blue", "xkcd:sky blue", "green", "purple", "red", "orange", "xkcd:lavender"]
+    color_choice = 0
     legend_list = []
     for method in all_data.keys():
         for num_rollouts in all_data[method].keys():
             control_data = all_data[method][num_rollouts]["control"][:, 0]
             state_data = all_data[method][num_rollouts]["state"][:, 0]
             cost_data = all_data[method][num_rollouts]["cost"][:, 0]
-            axes[0].plot(range(control_data.shape[0]), control_data, label=method + " " + num_rollouts)
-            axes[1].plot(range(state_data.shape[0]), state_data, label=method + " " + num_rollouts)
-            axes[2].plot(range(cost_data.shape[0]), cost_data, label=method + " " + num_rollouts)
-            legend_list.append(method + " " + num_rollouts)
+            label_name = method + " " + num_rollouts
+            if num_rollouts == "1024":
+                axes[0].plot(range(control_data.shape[0]), control_data, label=label_name, alpha=0.75, color=colors[color_choice])
+            axes[2].plot(range(cost_data.shape[0]), cost_data, label=label_name, alpha=0.75, color=colors[color_choice])
+            axes[1].plot(range(state_data.shape[0]), state_data, label=label_name, alpha=0.75, color=colors[color_choice])
+            print("{} is {}".format(label_name, colors[color_choice]))
+            color_choice += 1
+            legend_list.append(label_name)
 
             #     all_data["DMD"]
     plt.legend(legend_list)

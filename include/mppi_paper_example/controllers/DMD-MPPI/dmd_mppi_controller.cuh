@@ -8,7 +8,7 @@
 template <int S_DIM, int C_DIM, int MAX_TIMESTEPS>
 struct DMDMPPIParams : public ControllerParams<S_DIM, C_DIM, MAX_TIMESTEPS>
 {
-  float step_size = 0.8f;
+  float step_size = 0.6f;
   DMDMPPIParams() = default;
 };
 

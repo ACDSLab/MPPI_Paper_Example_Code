@@ -6,6 +6,7 @@
 // #include <mppi_paper_example/dynamics/diff_drive/diff_drive.cuh>
 #include <mppi/dynamics/double_integrator/di_dynamics.cuh>
 #include <mppi/cost_functions/quadratic_cost/quadratic_cost.cuh>
+#include <mppi/cost_functions/double_integrator/double_integrator_circle_cost.cuh>
 #include <mppi_paper_example/plants/sim_plant/sim_plant.hpp>
 
 #include "test/common.hpp"
@@ -16,7 +17,8 @@
 
 const int NUM_TIMESTEPS = 100;
 using DYN_T = DoubleIntegratorDynamics;
-using COST_T = QuadraticCost<DYN_T>;
+using COST_T = DoubleIntegratorCircleCost;
+// using COST_T = QuadraticCost<DYN_T>;
 using FB_T = DDPFeedback<DYN_T, NUM_TIMESTEPS>;
 using SAMPLING_T = mppi::sampling_distributions::GaussianDistribution<DYN_T::DYN_PARAMS_T>;
 
@@ -82,7 +84,8 @@ protected:
   // DYN_T::state_array origin_eigen;
   // DYN_T::state_array goal;
   // DYN_T::state_array q_coeffs;
-  float origin[DYN_T::STATE_DIM] = { -9, -9, 0.1, 0.1 };
+  // float origin[DYN_T::STATE_DIM] = { -9, -9, 0.1, 0.1 };
+  float origin[DYN_T::STATE_DIM] = { -2, 0.0, 0.0, 0.0 };
   float goal[DYN_T::STATE_DIM] = { -4, -4, 0, 0 };
   float q_coeffs[DYN_T::STATE_DIM] = { 1.0, 1.0, 0, 0 };
   float lambda = 1.0f;
@@ -119,13 +122,13 @@ protected:
      * Set up Cost function
      **/
     cost = new COST_T();
-    auto cost_params = cost->getParams();
-    for (int i = 0; i < DYN_T::STATE_DIM; i++)
-    {
-      cost_params.s_coeffs[i] = q_coeffs[i];
-      cost_params.s_goal[i] = goal[i];
-    }
-    cost->setParams(cost_params);
+    // auto cost_params = cost->getParams();
+    // for (int i = 0; i < DYN_T::STATE_DIM; i++)
+    // {
+    //   cost_params.s_coeffs[i] = q_coeffs[i];
+    //   cost_params.s_goal[i] = goal[i];
+    // }
+    // cost->setParams(cost_params);
 
     /**
      * Set up Feedback Controller
@@ -140,6 +143,7 @@ protected:
     controller_params.dynamics_rollout_dim_ = dim3(DYN_BLOCK_X, DYN_BLOCK_Y, 1);
     controller_params.cost_rollout_dim_ = dim3(COST_BLOCK_X, 1, 1);
     controller_params.num_iters_ = max_iter;
+    controller_params.seed_ = 42;
 
     HANDLE_ERROR(cudaStreamCreate(&stream));
 
