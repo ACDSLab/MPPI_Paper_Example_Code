@@ -1,0 +1,7 @@
+#pragma once
+
+#include <string>
+namespace mppi_generic_testing {
+  const std::string nn_file = "@PROJECT_SOURCE_DIR@/submodules/MPPI-Generic/resources/autorally_nnet_09_12_2018.npz";
+  const std::string track_file = "@PROJECT_SOURCE_DIR@/submodules/MPPI-Generic/resources/ccrf_track.npz";
+}

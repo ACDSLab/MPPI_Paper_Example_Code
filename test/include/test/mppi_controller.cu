@@ -463,6 +463,7 @@ void MPPIController<DYNAMICS_T, COSTS_T, ROLLOUTS, BDIM_X, BDIM_Y>::computeNomin
     u << U_[2*i], U_[2*i + 1];
     model_->computeStateDeriv(s, u, s_dot);
     model_->updateState(s, s, s_dot, 0.02);
+    model_->enforceConstraints(s, u);
     //Set current control solution after clamping
     control_solution_[2*i] = u(0);
     control_solution_[2*i + 1] = u(1);

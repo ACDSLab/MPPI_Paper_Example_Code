@@ -72,7 +72,7 @@ std::string DITestEnvironment::timestamp = "0000";
 testing::Environment* const csv_env = testing::AddGlobalTestEnvironment(new DITestEnvironment);
 
 template <class CONTROLLER_T>
-class MPPIGenericMPPITest : public ::testing::Test
+class DMDMPPITest : public ::testing::Test
 {
 public:
   using CONTROLLER_PARAMS_T = typename CONTROLLER_T::TEMPLATED_PARAMS;
@@ -179,9 +179,9 @@ using DIFFERENT_CONTROLLERS =
                      // CONTROLLER_TEMPLATE<1024>, CONTROLLER_TEMPLATE<2048>, CONTROLLER_TEMPLATE<4096>,
                      // CONTROLLER_TEMPLATE<6144>, CONTROLLER_TEMPLATE<8192>, CONTROLLER_TEMPLATE<16384>>;
 
-TYPED_TEST_SUITE(MPPIGenericMPPITest, DIFFERENT_CONTROLLERS);
+TYPED_TEST_SUITE(DMDMPPITest, DIFFERENT_CONTROLLERS);
 
-TYPED_TEST(MPPIGenericMPPITest, DifferentNumSamples)
+TYPED_TEST(DMDMPPITest, DifferentNumSamples)
 {
   RunningStats<double> times;
   std::atomic<bool> alive(true);

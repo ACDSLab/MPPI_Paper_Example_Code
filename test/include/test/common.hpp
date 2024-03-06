@@ -59,6 +59,44 @@ struct CommonSettings
   const float omega_max = 0.5f;      // [rad/s]
 };
 
+struct AutorallySettings
+{
+  static const int num_timesteps = 96;
+  static const int DYN_BLOCK_X = 32;
+  static const int DYN_BLOCK_Y = 16;
+  const int COST_BLOCK_X = 96;
+
+  const float dt = 1.0f/50.0f;
+  const int optimization_stride = 1;
+  const int num_iterations = 10000;
+  const int num_iters = 1;
+
+  const float lambda = 6.66f;
+  const float alpha = 0.0f;
+  const float discount = 0.9f;
+
+  const float init_throttle = 0.0f;
+  const float init_steering = 0.0f;
+  const float std_throttle = 0.275f;
+  const float std_steering = 0.3f;
+
+  const float2 throttle_range = make_float2(-0.99f, 0.65f);
+  const float2 steering_range = make_float2(-0.99f, 0.65f);
+
+  // Cost setttings
+  const float speed_coeff = 4.25f;
+  const float track_coeff = 200.0f;
+  const float slip_coeff = 10.0f;
+  const float crash_coeff = 10000.0f;
+  const float steering_coeff = 1.0f;
+  const float throttle_coeff = 1.0f;
+
+  const float desired_speed = 6.0f; // [m/s]
+  const float max_slip_angle = 0.9f; // [rad]
+  const float boundary_threshold = 0.65f;
+  const float track_slop = 0.0f;
+};
+
 template <typename T = double>
 class RunningStats
 {
@@ -95,7 +133,7 @@ protected:
   size_t count = 0;
 };
 
-std::string getCPUModelName()
+inline std::string getCPUModelName()
 {
   std::string cpu_name;
   FILE* cpuinfo = fopen("/proc/cpuinfo", "rb");
@@ -121,7 +159,7 @@ std::string getCPUModelName()
   return cpu_name;
 }
 
-std::string getTimestamp()
+inline std::string getTimestamp()
 {
   // Create timestamp
   std::time_t t = std::time(nullptr);
@@ -131,7 +169,7 @@ std::string getTimestamp()
   return std::string(time_buf);
 }
 
-void createNewCSVFile(std::string prefix, std::ofstream& new_file)
+inline void createNewCSVFile(std::string prefix, std::ofstream& new_file)
 {
   new_file.open(prefix + "_" + getTimestamp() + ".csv");
   new_file << "Processor,GPU,Method,Num Rollouts,Mean Optimization Time (ms), Std. Dev. Time (ms)\n";
