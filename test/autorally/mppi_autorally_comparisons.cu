@@ -156,8 +156,8 @@ protected:
     cost->paramsToDevice();
     cudaStreamSynchronize(stream);
     DYN_T::control_array init_control = DYN_T::control_array::Zero();
-    controller = std::make_shared<CONTROLLER_T>(dynamics, cost, NUM_TIMESTEPS, 1 / settings.dt, settings.lambda, variance,
-                                                init_control.data(), 1, 1, stream);
+    controller = std::make_shared<CONTROLLER_T>(dynamics, cost, NUM_TIMESTEPS, 1 / settings.dt, 1 / settings.lambda,
+                                                variance, init_control.data(), 1, 1, stream);
   }
 
   void TearDown() override

@@ -262,8 +262,8 @@ protected:
     float variance[DYN_T::CONTROL_DIM];
     variance[C_IND_CLASS(DYN_T::DYN_PARAMS_T, STEERING)] = settings.std_steering;
     variance[C_IND_CLASS(DYN_T::DYN_PARAMS_T, THROTTLE)] = settings.std_throttle;
-    controller = std::make_shared<CONTROLLER_T>(dynamics, cost, NUM_TIMESTEPS, 1 / settings.dt, settings.lambda, variance,
-                                                init_control.data(), 1, 1, stream);
+    controller = std::make_shared<CONTROLLER_T>(dynamics, cost, NUM_TIMESTEPS, 1 / settings.dt, 1 / settings.lambda,
+                                                variance, init_control.data(), 1, 1, stream);
   }
 
   void TearDown() override

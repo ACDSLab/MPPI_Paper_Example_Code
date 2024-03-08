@@ -169,8 +169,12 @@ inline std::string getTimestamp()
   return std::string(time_buf);
 }
 
-inline void createNewCSVFile(std::string prefix, std::ofstream& new_file)
+static const std::string default_csv_header =
+    "Processor,GPU,Method,Num Rollouts,Mean Optimization Time (ms), Std. Dev. "
+    "Time (ms)\n";
+
+inline void createNewCSVFile(std::string prefix, std::ofstream& new_file, std::string header = default_csv_header)
 {
   new_file.open(prefix + "_" + getTimestamp() + ".csv");
-  new_file << "Processor,GPU,Method,Num Rollouts,Mean Optimization Time (ms), Std. Dev. Time (ms)\n";
+  new_file << header;
 }
