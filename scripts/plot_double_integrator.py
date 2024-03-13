@@ -55,7 +55,7 @@ def plot_npy_files(file_names):
                 all_data[method][rollout_count] = {data_type: data}
             else:
                 all_data[method][rollout_count][data_type] = data
-    fig, axes = plt.subplots(3, sharex=True)
+    fig, axes = plt.subplots(3, gridspec_kw={"height_ratios": [1, 2, 1]})#, sharex=True)
     fig.set_tight_layout(True)
     for axis in axes:
         axis.spines["top"].set_visible(False)
@@ -70,18 +70,26 @@ def plot_npy_files(file_names):
     for method in all_data.keys():
         for num_rollouts in all_data[method].keys():
             control_data = all_data[method][num_rollouts]["control"][:, 0]
-            state_data = all_data[method][num_rollouts]["state"][:, 0]
+            state_data = all_data[method][num_rollouts]["state"][:, 0:2]
             cost_data = all_data[method][num_rollouts]["cost"][:, 0]
             label_name = method + " " + num_rollouts
             if num_rollouts == "1024":
                 axes[0].plot(range(control_data.shape[0]), control_data, label=label_name, alpha=0.75, color=colors[color_choice])
             axes[2].plot(range(cost_data.shape[0]), cost_data, label=label_name, alpha=0.75, color=colors[color_choice])
-            axes[1].plot(range(state_data.shape[0]), state_data, label=label_name, alpha=0.75, color=colors[color_choice])
+            axes[1].plot(state_data[:, 0], state_data[:, 1], label=label_name, alpha=0.75, color=colors[color_choice])
+            # axes[1].plot(range(state_data.shape[0]), state_data, label=label_name, alpha=0.75, color=colors[color_choice])
             print("{} is {}".format(label_name, colors[color_choice]))
             color_choice += 1
             legend_list.append(label_name)
 
             #     all_data["DMD"]
+    times = range(state_data.shape[0])
+    # goal_pos = [-4 for t in times]
+    # axes[1].plot(times, goal_pos, "r--", label="goal")
+    # legend_list.append("goal")
+    # fig.legend()
+    axes[1].set_xlim([-2.25,2.25])
+    axes[1].set_ylim([-2.25,2.25])
     plt.legend(legend_list)
     plt.show()
 
