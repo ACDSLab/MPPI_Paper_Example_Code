@@ -38,6 +38,7 @@ def plot_csv_files(loc, graph_type="GPU"):
     gpu_names = df.GPU.unique()
     gpu_names = [gpu for gpu in gpu_names if not pd.isna(gpu)]
     gpu_names.sort()
+    methods.sort()
     colors = ["red", "blue", "green", "orange", "cyan", "xkcd:pink", "xkcd:brown", "xkcd:sky blue", "xkcd:magenta"]
     if graph_type == "gpu":
         for method in methods:
@@ -49,12 +50,6 @@ def plot_csv_files(loc, graph_type="GPU"):
                          color=colors[i], capsize=2,
                          data=df.loc[(df["Method"] == graph_type) & (df["GPU"] == gpu)])
         plt.legend(labels=gpu_names)
-    # plt.bar("Num Rollouts", "Mean Optimization Time (ms)", yerr=" Std. Dev. Time (ms)", data=df.loc[df["Method"] == "ros2"])
-    # plt.bar("Num Rollouts", "Mean Optimization Time (ms)", data=torchrl_data)
-    # plt.errorbar("Num Rollouts", "Mean Optimization Time (ms)", yerr=" Std. Dev. Time (ms)", data=df.loc[df["Method"] == "ros2"])
-    # plt.errorbar("Num Rollouts", "Mean Optimization Time (ms)", yerr=" Std. Dev. Time (ms)", data=torchrl_data)
-    # plt.errorbar("Num Rollouts", "Mean Optimization Time (ms)", yerr=" Std. Dev. Time (ms)", data=df.loc[df["Method"] == "MPPI-Generic"])
-    # plt.legend(labels=["ros2", "torchrl", "MPPI-Generic"])
     plt.xscale("log")
     plt.yscale("log")
     plt.xlabel("Number of Samples")
@@ -68,16 +63,17 @@ def plot_csv_files(loc, graph_type="GPU"):
     else:
         plt.title("{} across GPUs".format(graph_type))
     plt.tight_layout()
-    # plt.legend(df["Method"].values)
-    # ax.legend(title="Method")
     if graph_type == "gpu":
-        plt.savefig("test_mppi_approach_plot.pdf", bbox_inches="tight")
+        file_name_type = gpu_names[0]
+        file_name_type = file_name_type.replace(" ", "_").lower()
+        print(file_name_type)
+        plt.savefig("{}_results.pdf".format(file_name_type), bbox_inches="tight")
     else:
         file_name_type = graph_type
         file_name_type = file_name_type.replace(" ", "_").lower()
         print(file_name_type)
         plt.savefig("{}_results.pdf".format(file_name_type), bbox_inches="tight")
-    plt.show()
+    # plt.show()
 
 if __name__ == "__main__":
     prefix = os.path.expanduser("~/workspaces/mppi_workspace/")
