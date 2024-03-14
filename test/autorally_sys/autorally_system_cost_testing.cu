@@ -25,20 +25,21 @@
 const int NUM_TIMESTEPS = AutorallySettings::num_timesteps;
 using DYN_T = NeuralNetModel<7, 2, 3, 6, 32, 32, 4>;
 using COST_T = ARModifiedCost;
-using FB_T = DDPFeedback<DYN_T, NUM_TIMESTEPS>;
+using FB_STATIC_T = DDPFeedback<DYN_T, NUM_TIMESTEPS>;
 using SAMPLING_T = mppi::sampling_distributions::GaussianDistribution<DYN_T::DYN_PARAMS_T>;
 
-template <int NUM_ROLLOUTS = 128>
-using CONTROLLER_TEMPLATE = VanillaMPPIController<DYN_T, COST_T, FB_T, NUM_TIMESTEPS, NUM_ROLLOUTS, SAMPLING_T>;
+template <int NUM_ROLLOUTS = 128, int NUM_TIMESTEPS_T = AutorallySettings::num_timesteps>
+using CONTROLLER_TEMPLATE = VanillaMPPIController<DYN_T, COST_T, DDPFeedback<DYN_T, NUM_TIMESTEPS_T>, NUM_TIMESTEPS_T,
+                                                  NUM_ROLLOUTS, SAMPLING_T>;
 
 template <int NUM_ROLLOUTS = 128>
 using AUTORALLY_MPPI_TEMPLATE =
     autorally_control::MPPIController<DYN_T, COST_T, NUM_ROLLOUTS, AutorallySettings::DYN_BLOCK_X,
                                       AutorallySettings::DYN_BLOCK_Y>;
 
-template <int NUM_ROLLOUTS = 128>
-using COMBINED_CONTROLLER_TEMPLATE =
-    std::pair<std::shared_ptr<CONTROLLER_TEMPLATE<NUM_ROLLOUTS>>, AUTORALLY_MPPI_TEMPLATE<NUM_ROLLOUTS>*>;
+template <int NUM_ROLLOUTS = 128, int NUM_TIMESTEPS_T = AutorallySettings::num_timesteps>
+using COMBINED_CONTROLLER_TEMPLATE = std::pair<std::shared_ptr<CONTROLLER_TEMPLATE<NUM_ROLLOUTS, NUM_TIMESTEPS_T>>,
+                                               AUTORALLY_MPPI_TEMPLATE<NUM_ROLLOUTS>*>;
 
 class CSVWritingEnvironment : public ::testing::Environment
 {
@@ -52,8 +53,8 @@ public:
   void SetUp() override
   {
     std::string custom_csv_header =
-        "Processor,GPU,Method,Num. Cosines,Num Rollouts,Mean Optimization Time "
-        "(ms), Std. Dev. Time (ms)\n";
+        "Processor,GPU,Method,Num. Cosines,Num Timesteps,Num Rollouts,Mean Optimization Time (ms), Std. Dev. Time "
+        "(ms)\n";
     createNewCSVFile("autorally_sys_compexity_results", csv_file, custom_csv_header);
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, 0);
@@ -95,13 +96,33 @@ public:
   using pair_512 = COMBINED_CONTROLLER_TEMPLATE<512>;
   using pair_1024 = COMBINED_CONTROLLER_TEMPLATE<1024>;
   using pair_2048 = COMBINED_CONTROLLER_TEMPLATE<2048>;
+  using pair_3072 = COMBINED_CONTROLLER_TEMPLATE<3072>;
   using pair_4096 = COMBINED_CONTROLLER_TEMPLATE<4096>;
+  using pair_6144 = COMBINED_CONTROLLER_TEMPLATE<6144>;
   using pair_8192 = COMBINED_CONTROLLER_TEMPLATE<8192>;
+  using pair_10240 = COMBINED_CONTROLLER_TEMPLATE<10240>;
   using pair_16384 = COMBINED_CONTROLLER_TEMPLATE<16384>;
   using pair_32768 = COMBINED_CONTROLLER_TEMPLATE<32768>;
 
-  using controller_tuple =
-      std::tuple<pair_128, pair_256, pair_512, pair_1024, pair_2048, pair_4096, pair_8192, pair_16384, pair_32768, >;
+  // clang-format off
+  using controller_tuple = std::tuple<
+      // pair_128,
+      // pair_256,
+      // pair_512,
+      // pair_1024,
+      // pair_2048,
+      // pair_3072,
+      // pair_4096,
+      // pair_6144,
+      pair_8192,
+      COMBINED_CONTROLLER_TEMPLATE<8192, 192>,
+      COMBINED_CONTROLLER_TEMPLATE<8192, 384>,
+      COMBINED_CONTROLLER_TEMPLATE<8192, 5 * 96>,
+      // pair_10240,
+      // pair_16384,
+      // pair_32768,
+      >;
+  // clang-format on
 
   struct Results
   {
@@ -120,7 +141,6 @@ protected:
 
   DYN_T* dynamics = nullptr;
   COST_T* cost = nullptr;
-  FB_T* fb_controller = nullptr;
   SAMPLING_T* sampler = nullptr;
   cudaStream_t stream;
   Eigen::Matrix<float, DYN_T::CONTROL_DIM, NUM_TIMESTEPS> init_control_traj;
@@ -175,19 +195,11 @@ protected:
     cost->GPUSetup();
     cost->loadTrackData(mppi_generic_testing::track_file);
 
-    /**
-     * Set up Feedback Controller
-     **/
-    fb_controller = new FB_T(dynamics, settings.dt);
-
     HANDLE_ERROR(cudaStreamCreate(&stream));
   }
 
   void TearDown() override
   {
-    logger->debug("In the teardown\n");
-    std::cout << std::endl;
-    delete fb_controller;
     delete cost;
     delete dynamics;
     delete sampler;
@@ -211,10 +223,14 @@ protected:
     using CONTROLLER_PARAMS_T = typename MPPI_TYPE::TEMPLATED_PARAMS;
     using PLANT_T = SimpleDynPlant<MPPI_TYPE>;
     using AUTORALLY_TYPE = typename std::remove_pointer<typename decltype(pair)::second_type>::type;
+    using FB_T = typename MPPI_TYPE::TEMPLATED_FEEDBACK;
 
     /**
      * Set up Controller
      **/
+    std::shared_ptr<FB_T> fb_controller;
+    fb_controller = std::make_shared<FB_T>(dynamics, settings.dt);
+
     CONTROLLER_PARAMS_T controller_params;
     controller_params.dt_ = settings.dt;
     controller_params.lambda_ = settings.lambda;
@@ -228,8 +244,11 @@ protected:
      */
     // First item in pair is MPPI-Generic and second is AutorallyMPPI
     logger->debug("Starting to make MPPI-Generic controller\n");
-    pair.first = std::make_shared<MPPI_TYPE>(this->dynamics, this->cost, this->fb_controller, this->sampler,
+    pair.first = std::make_shared<MPPI_TYPE>(this->dynamics, this->cost, fb_controller.get(), this->sampler,
                                              controller_params, this->stream);
+
+    // Get num_timesteps for autorally controller
+    const int num_timesteps_t = pair.first->getNumTimesteps();
 
     float std_dev[DYN_T::CONTROL_DIM] = { 0.0f };
     auto sampler_params = this->sampler->getParams();
@@ -239,7 +258,7 @@ protected:
     }
     logger->debug("Starting to make Autorally controller\n");
     pair.second =
-        new AUTORALLY_TYPE(this->dynamics, this->cost, NUM_TIMESTEPS, this->settings.dt, 1 / this->settings.lambda,
+        new AUTORALLY_TYPE(this->dynamics, this->cost, num_timesteps_t, this->settings.dt, 1 / this->settings.lambda,
                            std_dev, this->init_control_traj.col(0).data(), 1, 1, this->stream);
 
     logger->debug("Making Plant\n");
@@ -293,50 +312,56 @@ protected:
     double generic_average_time_ms = times_generic.mean();
     double autorally_average_time_ms = times_autorally.mean();
     double percent_diff = abs(generic_average_time_ms - autorally_average_time_ms) / generic_average_time_ms;
-    logger->info(
-        "%5d samples, MPPI-Generic times: %s%8.5f%s ms, Autorally "
-        "times: %s%8.5f%s ms, relative percent: %f%%\n",
-        AUTORALLY_TYPE::NUM_ROLLOUTS, mppi::util::YELLOW, generic_average_time_ms, mppi::util::CYAN, mppi::util::YELLOW,
-        autorally_average_time_ms, mppi::util::CYAN, 100.0f * percent_diff);
+
+    const int num_cos_op = cost->getParams().num_cosine_ops;
+    logger->warning(
+        "%5d samples, %4d timesteps, %3d cosines, MPPI-Generic times: %s%8.5f%s ms, Autorally times: %s%8.5f%s ms, "
+        "relative percent: %f%%\n",
+        AUTORALLY_TYPE::NUM_ROLLOUTS, num_timesteps_t, num_cos_op, mppi::util::GREEN, generic_average_time_ms,
+        mppi::util::YELLOW, mppi::util::GREEN, autorally_average_time_ms, mppi::util::YELLOW, 100.0f * percent_diff);
 
     // Cleanup
     plant.reset();
     // pair.first.reset();
-    // delete plant;
-    // delete pair.first;
     delete pair.second;
 
-    // If they are within 5% of each other, consider that the cross over point
-    if (percent_diff < 0.05)
-    {
-      Results full_result;
-      full_result.mppi_generic_mean_ms = generic_average_time_ms;
-      full_result.mppi_generic_var_ms = times_generic.variance();
-      full_result.autorally_mean_ms = autorally_average_time_ms;
-      full_result.autorally_var_ms = times_autorally.variance();
-      full_result.num_rollouts = AUTORALLY_TYPE::NUM_ROLLOUTS;
-      return full_result;
-    }
-    else
-    {
-      return testRollout<I + 1, Tp...>(t);
-    }
+    Results result;
+    result.mppi_generic_mean_ms = generic_average_time_ms;
+    result.mppi_generic_var_ms = times_generic.variance();
+    result.autorally_mean_ms = autorally_average_time_ms;
+    result.autorally_var_ms = times_autorally.variance();
+    result.num_rollouts = AUTORALLY_TYPE::NUM_ROLLOUTS;
+
+    // Fill in CSV file here
+    CSVWritingEnvironment::csv_file << CSVWritingEnvironment::getCPUName() << "," << CSVWritingEnvironment::getGPUName()
+                                    << ",MPPI-Generic," << num_cos_op << "," << num_timesteps_t << ","
+                                    << result.num_rollouts << "," << result.mppi_generic_mean_ms << ","
+                                    << sqrtf(result.mppi_generic_var_ms) << std::endl;
+    CSVWritingEnvironment::csv_file << CSVWritingEnvironment::getCPUName() << "," << CSVWritingEnvironment::getGPUName()
+                                    << ",autorally," << num_cos_op << "," << num_timesteps_t << ","
+                                    << result.num_rollouts << "," << result.autorally_mean_ms << ","
+                                    << sqrtf(result.autorally_var_ms) << std::endl;
+
+    return testRollout<I + 1, Tp...>(t);
   }
 };
 
 TEST_F(MPPIGenericVsAutorally, EqualityPoint)
 {
-  std::vector<int> num_cosine_operations_vec = { 0, 5, 10, 15, 20, 25, 50 };
+  std::vector<int> num_cosine_operations_vec;
+  for (int i = 0; i < 16; i++)
+  {
+    num_cosine_operations_vec.push_back(i * 10);
+  }
   this->logger->debug("Running GPU Setup\n");
   auto cost_params = this->cost->getParams();
   for (const auto& num_cos_op : num_cosine_operations_vec)
   {
     cost_params.num_cosine_ops = num_cos_op;
+    // Need to recreate the track map every call
     this->cost->GPUSetup();
     this->cost->setParams(cost_params);
     this->cost->loadTrackData(mppi_generic_testing::track_file);
     auto result = this->testRollout(this->controllers);
-    this->logger->warning("Cost with %3d cos() are nearly equivalent at %6d samples.\n", cost_params.num_cosine_ops,
-                          result.num_rollouts);
   }
 }
