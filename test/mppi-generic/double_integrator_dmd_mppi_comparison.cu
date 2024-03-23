@@ -38,7 +38,10 @@ public:
   ~DITestEnvironment() override {}
   void SetUp() override {
     timestamp = getTimestamp();
-    createNewCSVFile("mppi_dmd_comparisons", csv_file);
+    std::string custom_csv_header =
+        "Processor,GPU,Method,Step Size,Num Rollouts,Cost Min,Cost Mean,Cost Variance,Mean Optimization Time (ms), "
+        "Std. Dev. Time (ms)\n";
+    createNewCSVFile("mppi_dmd_comparisons", csv_file, custom_csv_header);
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, 0);
     gpu_name = std::string(deviceProp.name);
@@ -169,63 +172,102 @@ protected:
   }
 };
 
-using DIFFERENT_CONTROLLERS =
-    ::testing::Types<MPPI_CONTROLLER_TEMPLATE<64>, DMD_MPPI_CONTROLLER_TEMPLATE<64>,
-                     MPPI_CONTROLLER_TEMPLATE<128>, DMD_MPPI_CONTROLLER_TEMPLATE<128>,
-                     // MPPI_CONTROLLER_TEMPLATE<256>, DMD_MPPI_CONTROLLER_TEMPLATE<256>,
-                     // MPPI_CONTROLLER_TEMPLATE<512>, DMD_MPPI_CONTROLLER_TEMPLATE<512>,
-                     MPPI_CONTROLLER_TEMPLATE<1024>, DMD_MPPI_CONTROLLER_TEMPLATE<1024>
-                     >; //CONTROLLER_TEMPLATE<256>, CONTROLLER_TEMPLATE<512>,
-                     // CONTROLLER_TEMPLATE<1024>, CONTROLLER_TEMPLATE<2048>, CONTROLLER_TEMPLATE<4096>,
-                     // CONTROLLER_TEMPLATE<6144>, CONTROLLER_TEMPLATE<8192>, CONTROLLER_TEMPLATE<16384>>;
+using DIFFERENT_CONTROLLERS = ::testing::Types<DMD_MPPI_CONTROLLER_TEMPLATE<64>, DMD_MPPI_CONTROLLER_TEMPLATE<128>,
+                                               DMD_MPPI_CONTROLLER_TEMPLATE<256>, DMD_MPPI_CONTROLLER_TEMPLATE<512>,
+                                               DMD_MPPI_CONTROLLER_TEMPLATE<1024>, DMD_MPPI_CONTROLLER_TEMPLATE<2048> >;
 
 TYPED_TEST_SUITE(DMDMPPITest, DIFFERENT_CONTROLLERS);
 
 TYPED_TEST(DMDMPPITest, DifferentNumSamples)
 {
-  RunningStats<double> times;
+  const int num_iterations = 1000;
+  const int num_steps = 10;
+  const float min_step_size = 0.5f;
+  const float step_size_range = 0.5f;
+  RunningStats<double> times, cost_stats;
   std::atomic<bool> alive(true);
-  std::vector<float> states_taken;
-  std::vector<float> controls_taken;
-  std::vector<float> costs_taken;
-  states_taken.reserve(DYN_T::STATE_DIM * this->simulation_time_horizon);
-  controls_taken.reserve(DYN_T::CONTROL_DIM * this->simulation_time_horizon);
-  costs_taken.reserve(this->simulation_time_horizon);
+  std::vector<float> states_taken(DYN_T::STATE_DIM * this->simulation_time_horizon);
+  std::vector<float> best_states(DYN_T::STATE_DIM * this->simulation_time_horizon);
+  std::vector<float> controls_taken(DYN_T::CONTROL_DIM * this->simulation_time_horizon);
+  std::vector<float> best_controls(DYN_T::CONTROL_DIM * this->simulation_time_horizon);
+  std::vector<float> costs_taken(this->simulation_time_horizon), best_costs(this->simulation_time_horizon);
+  float min_cost = std::numeric_limits<float>::infinity();
   float total_cost = 0.0f;
   int crash_status = 0;
-  for (int t = 0; t < this->simulation_time_horizon; t++)
+  DYN_T::state_array initial_state = this->plant->current_state_;
+  for (int s = 0; s <= num_steps; s++)
   {
-    auto start = std::chrono::steady_clock::now();
-    this->plant->updateState(this->plant->current_state_, t * this->dt);
-    this->plant->runControlIteration(&alive);
-    auto end = std::chrono::steady_clock::now();
-    double duration = (end - start).count() / 1e6;
-    times.add(duration);
+    this->controller_params.step_size = (float)s / num_steps * step_size_range + min_step_size;
+    this->controller->setParams(this->controller_params);
+    times.reset();
+    cost_stats.reset();
+    for (int it = 0; it < num_iterations; it++)
+    {
+      total_cost = 0.0f;
+      crash_status = 0;
+      this->plant->current_state_ = initial_state;
+      this->plant->resetStateTime();
+      this->controller->updateImportanceSampler(this->controller_params.init_control_traj_);
+      states_taken.reserve(DYN_T::STATE_DIM * this->simulation_time_horizon);
+      controls_taken.reserve(DYN_T::CONTROL_DIM * this->simulation_time_horizon);
+      costs_taken.reserve(this->simulation_time_horizon);
+      for (int t = 0; t < this->simulation_time_horizon; t++)
+      {
+        auto start = std::chrono::steady_clock::now();
+        this->plant->updateState(this->plant->current_state_, t * this->dt);
+        this->plant->runControlIteration(&alive);
+        auto end = std::chrono::steady_clock::now();
+        double duration = (end - start).count() / 1e6;
+        times.add(duration);
 
-    // save out control and state
-    for (int i = 0; i < DYN_T::STATE_DIM; i++)
-    {
-      states_taken[t * DYN_T::STATE_DIM + i] = this->plant->current_state_(i);
+        // save out control and state
+        for (int i = 0; i < DYN_T::STATE_DIM; i++)
+        {
+          states_taken[t * DYN_T::STATE_DIM + i] = this->plant->current_state_.data()[i];
+        }
+        for (int i = 0; i < DYN_T::CONTROL_DIM; i++)
+        {
+          controls_taken[t * DYN_T::CONTROL_DIM + i] = this->controller->getControlSeq().col(1)(i, 0);
+        }
+        total_cost += this->cost->computeRunningCost(this->plant->current_state_,
+                                                     this->controller->getControlSeq().col(1), t, &crash_status);
+        costs_taken[t] = total_cost;
+      }
+      cost_stats.add(total_cost);
+      if ((it + 1) % 50 == 0)
+      {
+        printf("Finished iteration %5d/%5d with cost %f\r", it + 1, num_iterations, total_cost);
+        fflush(stdout);
+      }
+
+      // Keep the best trajectory
+      if (total_cost < min_cost)
+      {
+        best_costs = std::move(costs_taken);
+        best_states = std::move(states_taken);
+        best_controls = std::move(controls_taken);
+        min_cost = total_cost;
+      }
     }
-    for (int i = 0; i < DYN_T::CONTROL_DIM; i++)
-    {
-      controls_taken[t * DYN_T::CONTROL_DIM + i] = this->controller->getControlSeq().col(1)(i, 0);
-    }
-    total_cost += this->cost->computeRunningCost(this->plant->current_state_, this->controller->getControlSeq().col(1),
-                                                 t, &crash_status);
-    costs_taken[t] = total_cost;
+    std::string step_size_string = std::to_string(this->controller_params.step_size).substr(0, 4);
+    std::string cnpy_file_name = this->controller->getControllerName() + "_" +
+                                 std::to_string(this->controller->sampler_->getNumRollouts()) + "_" + step_size_string +
+                                 "_" + DITestEnvironment::timestamp + ".npy";
+    cnpy::npy_save("state_" + cnpy_file_name, best_states.data(), { this->simulation_time_horizon, DYN_T::STATE_DIM },
+                   "w");
+    cnpy::npy_save("control_" + cnpy_file_name, best_controls.data(),
+                   { this->simulation_time_horizon, DYN_T::CONTROL_DIM }, "w");
+    cnpy::npy_save("costs_" + cnpy_file_name, best_costs.data(), { this->simulation_time_horizon, 1 }, "w");
+    // Save to CSV File
+    DITestEnvironment::csv_file << DITestEnvironment::getCPUName() << "," << DITestEnvironment::getGPUName() << ","
+                                << this->controller->getControllerName() << "," << step_size_string << ","
+                                << this->controller->sampler_->getNumRollouts() << "," << cost_stats.min() << ","
+                                << cost_stats.mean() << "," << cost_stats.variance() << "," << times.mean() << ","
+                                << sqrt(times.variance()) << std::endl;
+    printf("MPPI-Generic %s with %d rollouts optimization time (%s step size): %f +- %f ms and cost %f +- %f\n",
+           this->controller->getControllerName().c_str(), this->controller->sampler_->getNumRollouts(),
+           step_size_string.c_str(), times.mean(), sqrt(times.variance()), cost_stats.mean(),
+           sqrt(cost_stats.variance()));
+    printf("\tAverage Optimization Hz: %f Hz\n", 1000.0 / times.mean());
   }
-  std::string cnpy_file_name = this->controller->getControllerName() + "_" + std::to_string(this->controller->sampler_->getNumRollouts())
-                              + "_" + DITestEnvironment::timestamp + ".npy";
-  cnpy::npy_save("state_" + cnpy_file_name, states_taken.data(), { this->simulation_time_horizon, DYN_T::STATE_DIM }, "w");
-  cnpy::npy_save("control_" + cnpy_file_name, controls_taken.data(), { this->simulation_time_horizon, DYN_T::CONTROL_DIM }, "w");
-  cnpy::npy_save("costs_" + cnpy_file_name, costs_taken.data(), { this->simulation_time_horizon, 1 }, "w");
-  // Save to CSV File
-  DITestEnvironment::csv_file << DITestEnvironment::getCPUName()
-      << "," << DITestEnvironment::getGPUName() << "," << this->controller->getControllerName() << ","
-      << this->controller->sampler_->getNumRollouts() << "," << times.mean()
-      << "," << sqrt(times.variance()) << std::endl;
-  printf("MPPI-Generic %s with %d rollouts optimization time: %f +- %f ms and cost %f\n", this->controller->getControllerName().c_str(),
-         this->controller->sampler_->getNumRollouts(), times.mean(), sqrt(times.variance()), total_cost);
-  printf("\tAverage Optimization Hz: %f Hz\n", 1000.0 / times.mean());
 }

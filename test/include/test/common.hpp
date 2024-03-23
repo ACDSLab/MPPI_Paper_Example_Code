@@ -119,6 +119,14 @@ public:
       mean_ms_ = new_mean;
       variance_ms_ = new_variance;
     }
+    if (val > max_value)
+    {
+      max_value = val;
+    }
+    if (val < min_value)
+    {
+      min_value = val;
+    }
   }
 
   T mean() const
@@ -131,9 +139,30 @@ public:
     return (count > 1) ? variance_ms_ / (count - 1) : 0.0;
   }
 
+  T min() const
+  {
+    return min_value;
+  }
+
+  T max() const
+  {
+    return max_value;
+  }
+
+  void reset()
+  {
+    mean_ms_ = 0.0;
+    variance_ms_ = 0.0;
+    count = 0;
+    min_value = std::numeric_limits<T>::max();
+    max_value = std::numeric_limits<T>::min();
+  }
+
 protected:
   T mean_ms_ = 0.0;
   T variance_ms_ = 0.0;
+  T min_value = std::numeric_limits<T>::max();
+  T max_value = std::numeric_limits<T>::min();
   size_t count = 0;
 };
 

@@ -32,19 +32,25 @@ def plot_csv_files(loc, graph_type="GPU", compare_across="GPU"):
     df = df[["Processor", "GPU", "Num Rollouts", "Method", "Mean Optimization Time (ms)", " Std. Dev. Time (ms)"]]
     # torchrl_data = df.loc[df["Method"] == "torchrl"]
     df = df.sort_values(by=["Num Rollouts"])
-    print(df.Method.unique())
     methods = df.Method.unique()
     cpu_names = df.Processor.unique()
     gpu_names = df.GPU.unique()
     gpu_names = [gpu for gpu in gpu_names if not pd.isna(gpu)]
     cpu_names.sort()
+    cpu_names = np.flip(cpu_names)
     gpu_names.sort()
     methods.sort()
     colors = ["red", "blue", "green", "orange", "cyan", "xkcd:pink", "xkcd:brown", "xkcd:sky blue", "xkcd:magenta"]
+    constant_device_title = ""
+    other_device_type = ""
     if compare_across == "GPU":
         device_list = gpu_names
+        constant_device_title = cpu_names[0]
+        other_device_type = "Processor"
     elif compare_across == "Processor":
         device_list = cpu_names
+        constant_device_title = gpu_names[0]
+        other_device_type = "GPU"
     if graph_type == "gpu":
         for method in methods:
             plt.errorbar("Num Rollouts", "Mean Optimization Time (ms)", yerr=" Std. Dev. Time (ms)", data=df.loc[df["Method"] == method])
@@ -53,7 +59,7 @@ def plot_csv_files(loc, graph_type="GPU", compare_across="GPU"):
         for i, device in enumerate(device_list):
             plt.errorbar("Num Rollouts", "Mean Optimization Time (ms)", yerr=" Std. Dev. Time (ms)",
                          color=colors[i], capsize=2,
-                         data=df.loc[(df["Method"] == graph_type) & (df[compare_across] == device)])
+                         data=df.loc[(df["Method"] == graph_type) & (df[compare_across] == device) & (df[other_device_type] == constant_device_title)])
         plt.legend(labels=device_list)
     plt.xscale("log")
     plt.yscale("log")
@@ -64,12 +70,12 @@ def plot_csv_files(loc, graph_type="GPU", compare_across="GPU"):
             if not pd.isna(gpu_name):
                 gpu_title = gpu_name
                 break
-        plt.title("CPU: {},\nGPU: {}".format(cpu_names[0], gpu_title))
+        plt.title("CPU: {},\nGPU: {}".format(constant_device_title, gpu_title))
     else:
         if compare_across == "GPU":
-            plt.title("{} across GPUs".format(graph_type))
+            plt.title("{} across GPUs\n{}".format(graph_type, constant_device_title))
         elif compare_across == "Processor":
-            plt.title("{} across CPUs".format(graph_type))
+            plt.title("{} across CPUs\n{}".format(graph_type, constant_device_title))
     plt.tight_layout()
     if graph_type == "gpu":
         file_name_type = gpu_names[0]
