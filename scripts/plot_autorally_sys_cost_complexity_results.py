@@ -32,12 +32,6 @@ def plot_csv_files(loc, graph_type="GPU", x_axis_type="num_cosines"):
     df = pd.concat(map(pd.read_csv, csv_files), ignore_index=True, sort=True)
     df.drop_duplicates(inplace=True)
     df = df[["Processor", "GPU", "Num Rollouts", "Method", "Num. Cosines", "Num Timesteps", "Mean Optimization Time (ms)", " Std. Dev. Time (ms)"]]
-    if x_axis_type == "num_cosines":
-        df = df.loc[df["Num Timesteps"] == 96]
-        df = df.sort_values(by=["Num. Cosines"])
-    else:
-        df = df.loc[df["Num. Cosines"] == 0]
-        df = df.sort_values(by=["Num Timesteps"])
     # df = df.sort_values(by=["Num. Cosines"])
     print(df.Method.unique())
     methods = df.Method.unique()
@@ -46,8 +40,19 @@ def plot_csv_files(loc, graph_type="GPU", x_axis_type="num_cosines"):
     gpu_names = [gpu for gpu in gpu_names if not pd.isna(gpu)]
     num_rollouts = df["Num Rollouts"].unique()
     num_rollouts.sort()
+    num_cosines_list = df["Num. Cosines"].unique()
+    num_cosines_list.sort()
+    num_timesteps_list = df["Num Timesteps"].unique()
+    num_timesteps_list.sort()
     gpu_names.sort()
     methods.sort()
+    if x_axis_type == "num_cosines":
+        # df = df.loc[df["Num Timesteps"] == 96] # Autorally time
+        df = df.loc[df["Num Timesteps"] == num_timesteps_list[0]] # Differential Drive
+        df = df.sort_values(by=["Num. Cosines"])
+    else:
+        df = df.loc[df["Num. Cosines"] == num_cosines_list[0]]
+        df = df.sort_values(by=["Num Timesteps"])
     colors = ["red", "blue", "green", "orange", "cyan", "xkcd:pink", "xkcd:brown", "xkcd:sky blue", "xkcd:magenta"]
     x_axis_data = "Num. Cosines" if x_axis_type == "num_cosines" else "Num Timesteps"
     if graph_type == "gpu":
@@ -83,12 +88,12 @@ def plot_csv_files(loc, graph_type="GPU", x_axis_type="num_cosines"):
         file_name_type = gpu_names[0]
         file_name_type = file_name_type.replace(" ", "_").lower()
         print(file_name_type)
-        plt.savefig("{}_cost_complexity_results.pdf".format(file_name_type), bbox_inches="tight")
+        plt.savefig("{}_diff_drive_cost_complexity_results.pdf".format(file_name_type), bbox_inches="tight")
     else:
         file_name_type = graph_type
         file_name_type = file_name_type.replace(" ", "_").lower()
         print(file_name_type)
-        plt.savefig("{}_cost_complexity_results.pdf".format(file_name_type), bbox_inches="tight")
+        plt.savefig("{}_diff_drive_cost_complexity_results.pdf".format(file_name_type), bbox_inches="tight")
     # plt.show()
 
 if __name__ == "__main__":

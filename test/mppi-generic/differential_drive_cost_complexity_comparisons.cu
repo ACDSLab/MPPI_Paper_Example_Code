@@ -6,12 +6,11 @@
  * @version 0.0.1
  * @date 2024-03-06
  */
-#include <chrono>
 #include <gtest/gtest.h>
 #include <mppi/controllers/MPPI/mppi_controller.cuh>
-#include <mppi/dynamics/autorally/ar_nn_model.cuh>
 #include <mppi/feedback_controllers/DDP/ddp.cuh>
-#include <mppi_paper_example/costs/AutorallyModifiedCost/autorally_modified_cost.cuh>
+#include <mppi_paper_example/costs/ComparisonCost/comparison_cost.cuh>
+#include <mppi_paper_example/dynamics/diff_drive/diff_drive.cuh>
 #include <mppi_paper_example/plants/sim_plant/sim_plant.hpp>
 
 #include "test/common.hpp"
@@ -22,22 +21,22 @@
 #include <type_traits>
 #include <utility>
 
-const int NUM_TIMESTEPS = AutorallySettings::num_timesteps;
-using DYN_T = NeuralNetModel<7, 2, 3, 6, 32, 32, 4>;
-using COST_T = ARModifiedCost;
+const int NUM_TIMESTEPS = CommonSettings::num_timesteps;
+using DYN_T = DiffDrive;
+using COST_T = ComparisonCost<DYN_T::DYN_PARAMS_T>;
 using FB_STATIC_T = DDPFeedback<DYN_T, NUM_TIMESTEPS>;
 using SAMPLING_T = mppi::sampling_distributions::GaussianDistribution<DYN_T::DYN_PARAMS_T>;
 
-template <int NUM_ROLLOUTS = 128, int NUM_TIMESTEPS_T = AutorallySettings::num_timesteps>
+template <int NUM_ROLLOUTS = 128, int NUM_TIMESTEPS_T = CommonSettings::num_timesteps>
 using CONTROLLER_TEMPLATE = VanillaMPPIController<DYN_T, COST_T, DDPFeedback<DYN_T, NUM_TIMESTEPS_T>, NUM_TIMESTEPS_T,
                                                   NUM_ROLLOUTS, SAMPLING_T>;
 
 template <int NUM_ROLLOUTS = 128>
 using AUTORALLY_MPPI_TEMPLATE =
-    autorally_control::MPPIController<DYN_T, COST_T, NUM_ROLLOUTS, AutorallySettings::DYN_BLOCK_X,
-                                      AutorallySettings::DYN_BLOCK_Y>;
+    autorally_control::MPPIController<DYN_T, COST_T, NUM_ROLLOUTS, CommonSettings::DYN_BLOCK_X,
+                                      CommonSettings::DYN_BLOCK_Y>;
 
-template <int NUM_ROLLOUTS = 128, int NUM_TIMESTEPS_T = AutorallySettings::num_timesteps>
+template <int NUM_ROLLOUTS = 128, int NUM_TIMESTEPS_T = CommonSettings::num_timesteps>
 using COMBINED_CONTROLLER_TEMPLATE = std::pair<std::shared_ptr<CONTROLLER_TEMPLATE<NUM_ROLLOUTS, NUM_TIMESTEPS_T>>,
                                                AUTORALLY_MPPI_TEMPLATE<NUM_ROLLOUTS>*>;
 
@@ -55,7 +54,7 @@ public:
     std::string custom_csv_header =
         "Processor,GPU,Method,Num. Cosines,Num Timesteps,Num Rollouts,Mean Optimization Time (ms), Std. Dev. Time "
         "(ms)\n";
-    createNewCSVFile("autorally_sys_compexity_results", csv_file, custom_csv_header);
+    createNewCSVFile("diff_drive_compexity_results", csv_file, custom_csv_header);
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp, 0);
     gpu_name = std::string(deviceProp.name);
@@ -91,25 +90,12 @@ testing::Environment* const csv_env = testing::AddGlobalTestEnvironment(new CSVW
 class MPPIGenericVsAutorally : public ::testing::Test
 {
 public:
-  using pair_128 = COMBINED_CONTROLLER_TEMPLATE<128>;
-  using pair_256 = COMBINED_CONTROLLER_TEMPLATE<256>;
-  using pair_512 = COMBINED_CONTROLLER_TEMPLATE<512>;
-  using pair_1024 = COMBINED_CONTROLLER_TEMPLATE<1024>;
-  using pair_2048 = COMBINED_CONTROLLER_TEMPLATE<2048>;
-  using pair_3072 = COMBINED_CONTROLLER_TEMPLATE<3072>;
-  using pair_4096 = COMBINED_CONTROLLER_TEMPLATE<4096>;
-  using pair_6144 = COMBINED_CONTROLLER_TEMPLATE<6144>;
-  using pair_8192 = COMBINED_CONTROLLER_TEMPLATE<8192>;
-  using pair_10240 = COMBINED_CONTROLLER_TEMPLATE<10240>;
-  using pair_16384 = COMBINED_CONTROLLER_TEMPLATE<16384>;
-  using pair_32768 = COMBINED_CONTROLLER_TEMPLATE<32768>;
-
   // clang-format off
   using controller_tuple = std::tuple<
-      COMBINED_CONTROLLER_TEMPLATE<8192, AutorallySettings::num_timesteps * 1>,
-      COMBINED_CONTROLLER_TEMPLATE<8192, AutorallySettings::num_timesteps * 2>,
-      COMBINED_CONTROLLER_TEMPLATE<8192, AutorallySettings::num_timesteps * 3>,
-      COMBINED_CONTROLLER_TEMPLATE<8192, AutorallySettings::num_timesteps * 4>,
+      COMBINED_CONTROLLER_TEMPLATE<8192, CommonSettings::num_timesteps * 1>,
+      COMBINED_CONTROLLER_TEMPLATE<8192, CommonSettings::num_timesteps * 2>,
+      COMBINED_CONTROLLER_TEMPLATE<8192, CommonSettings::num_timesteps * 3>,
+      COMBINED_CONTROLLER_TEMPLATE<8192, CommonSettings::num_timesteps * 4>,
       >;
   // clang-format on
 
@@ -123,10 +109,7 @@ public:
   };
 
 protected:
-  AutorallySettings settings;
-  // const int DYN_BLOCK_X = 64;
-  // const int DYN_BLOCK_Y = DYN_T::STATE_DIM;
-  // const int COST_BLOCK_X = 64;
+  CommonSettings settings;
 
   DYN_T* dynamics = nullptr;
   COST_T* cost = nullptr;
@@ -140,13 +123,13 @@ protected:
   {
     logger = std::make_shared<mppi::util::MPPILogger>(mppi::util::LOG_LEVEL::INFO);
     SAMPLING_T::SAMPLING_PARAMS_T sampler_params;
-    sampler_params.std_dev[C_IND_CLASS(DYN_T::DYN_PARAMS_T, STEERING)] = settings.std_steering;
-    sampler_params.std_dev[C_IND_CLASS(DYN_T::DYN_PARAMS_T, THROTTLE)] = settings.std_throttle;
+    sampler_params.std_dev[C_IND_CLASS(DYN_T::DYN_PARAMS_T, LEFT_ROT_SPD)] = settings.std_dev_v;
+    sampler_params.std_dev[C_IND_CLASS(DYN_T::DYN_PARAMS_T, RIGHT_ROT_SPD)] = settings.std_dev_v;
     // sampler_params.rewrite_controls_block_dim.y = 8;
     sampler = new SAMPLING_T(sampler_params);
     DYN_T::control_array u;
-    u[C_IND_CLASS(DYN_T::DYN_PARAMS_T, STEERING)] = settings.init_steering;
-    u[C_IND_CLASS(DYN_T::DYN_PARAMS_T, THROTTLE)] = settings.init_throttle;
+    u[C_IND_CLASS(DYN_T::DYN_PARAMS_T, LEFT_ROT_SPD)] = 0.0f;
+    u[C_IND_CLASS(DYN_T::DYN_PARAMS_T, RIGHT_ROT_SPD)] = 0.0f;
     for (int i = 0; i < NUM_TIMESTEPS; i++)
     {
       init_control_traj.col(i) = u;
@@ -156,10 +139,16 @@ protected:
      * Set up dynamics
      **/
     dynamics = new DYN_T();
-    dynamics->loadParams(mppi_generic_testing::nn_file);
+    auto dynamics_params = dynamics->getParams();
+    dynamics_params.r = settings.robot_radius;
+    dynamics_params.L = settings.robot_length;
+    dynamics->setParams(dynamics_params);
+    float2 control_range = make_float2(settings.v_min, settings.v_max);
     std::array<float2, DYN_T::CONTROL_DIM> control_ranges;
-    control_ranges[C_IND_CLASS(DYN_T::DYN_PARAMS_T, STEERING)] = settings.steering_range;
-    control_ranges[C_IND_CLASS(DYN_T::DYN_PARAMS_T, THROTTLE)] = settings.throttle_range;
+    for (int i = 0; i < DYN_T::CONTROL_DIM; i++)
+    {
+      control_ranges[i] = control_range;
+    }
     dynamics->setControlRanges(control_ranges);
 
     /**
@@ -167,22 +156,51 @@ protected:
      **/
     cost = new COST_T();
     auto cost_params = cost->getParams();
-    cost_params.speed_coeff = settings.speed_coeff;
-    cost_params.track_coeff = settings.track_coeff;
-    cost_params.slip_coeff = settings.slip_coeff;
-    cost_params.crash_coeff = settings.crash_coeff;
-    cost_params.boundary_threshold = settings.boundary_threshold;
-    cost_params.desired_speed = settings.desired_speed;
-    cost_params.max_slip_ang = settings.max_slip_angle;
-    cost_params.track_slop = settings.track_slop;
-    cost_params.discount = settings.discount;
-
+    cost_params.goal.pos = make_float2(settings.goal_x, settings.goal_y);
+    cost_params.goal_angle.yaw = settings.goal_yaw;
+    cost_params.goal.power = settings.goal_power;
+    cost_params.goal.weight = settings.goal_weight;
+    cost_params.goal_angle.power = settings.goal_angle_power;
+    cost_params.goal_angle.weight = settings.goal_angle_weight;
+    cost_params.goal_distance_threshold = settings.goal_dist_threshold;
+    cost_params.obstacle.use_footprint = settings.consider_footprint;
+    cost_params.obstacle.near_goal_distance = settings.near_goal_distance;
+    cost_params.obstacle.inflation_radius = settings.obs_inflation_radius;
+    cost_params.obstacle.repulsion_weight = settings.obs_repulsion_weight;
+    cost_params.obstacle.scale_factor = settings.obs_scaling_factor;
+    cost_params.obstacle.traj_weight = settings.obs_traj_weight;
+    cost_params.obstacle.power = settings.obs_power;
+    cost_params.obstacle.min_radius = 0.0f;
     cost->setParams(cost_params);
 
     // Setup cost map
-    auto logger = std::make_shared<mppi::util::MPPILogger>();
-    cost->GPUSetup();
-    cost->loadTrackData(mppi_generic_testing::track_file);
+    int rows = settings.length_x / settings.resolution;
+    int cols = settings.length_y / settings.resolution;
+    typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixXfROW;
+    MatrixXfROW map = MatrixXfROW::Constant(rows, cols, settings.costmap_default_val * 1.0f);
+
+    // Add Obstacles
+    for (int i = 0; i < settings.NUM_OBSTACLES; i++)
+    {
+      int obs_x = settings.obstacle_pos_x[i] / settings.resolution;
+      int obs_y = settings.obstacle_pos_y[i] / settings.resolution;
+      int obs_size = settings.obstacle_sizes[i] / settings.resolution;
+      for (int row = obs_x; row < obs_x + obs_size; row++)
+      {
+        for (int col = obs_y; col < obs_y + obs_size; col++)
+        {
+          map(row, col) = settings.obstacle_cost * 1.0f;
+        }
+      }
+    }
+
+    cudaExtent extent = make_cudaExtent(cols, rows, 0);
+    float3 origin = make_float3(settings.origin_x, settings.origin_y, 0.0f);
+    cost->tex_helper_->updateOrigin(0, origin);
+    cost->tex_helper_->updateResolution(0, settings.resolution);
+    cost->tex_helper_->setExtent(0, extent);
+    cost->tex_helper_->updateTexture(0, map, true);
+    cost->tex_helper_->enableTexture(0);
 
     HANDLE_ERROR(cudaStreamCreate(&stream));
   }
@@ -350,7 +368,6 @@ TEST_F(MPPIGenericVsAutorally, EqualityPoint)
     // Need to recreate the track map every call
     this->cost->GPUSetup();
     this->cost->setParams(cost_params);
-    this->cost->loadTrackData(mppi_generic_testing::track_file);
     auto result = this->testRollout(this->controllers);
   }
 }

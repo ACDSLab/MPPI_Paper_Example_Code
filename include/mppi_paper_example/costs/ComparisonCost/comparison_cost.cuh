@@ -39,6 +39,7 @@ struct ComparisonParams : public CostParams<C_IND_CLASS(DYN_PARAMS_T, NUM_CONTRO
 {
   float obstacle_cost = 1.0f;
   float goal_distance_threshold = 1000.0f;  // [m]
+  int num_cosine_ops = 0;
   GoalParams goal;
   GoalAngleParams goal_angle;
   ObstacleParams obstacle;

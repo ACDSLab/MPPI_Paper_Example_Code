@@ -34,10 +34,16 @@ void COMPARISON_COST::GPUSetup()
 COMPARISON_COST_TEMPLATE
 __host__ __device__ float COMPARISON_COST::computeStateCost(float* y, int t, float* theta_c, int* crash_status)
 {
+  float cost = 1.0f;
+  for (int i = 0; i < this->params_.num_cosine_ops; i++)
+  {
+    cost = cosf(cost);
+  }
+  cost *= 0.0f;
   float obstacle_cost = computeObstacleCost(y, t, crash_status, theta_c);
   float goal_cost = computeGoalCost(y, t, crash_status, theta_c);
   float goal_angle_cost = computeGoalAngleCost(y, t, crash_status, theta_c);
-  float cost = obstacle_cost + goal_cost + goal_angle_cost;
+  cost = obstacle_cost + goal_cost + goal_angle_cost;
   return cost;
 }
 

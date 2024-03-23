@@ -136,7 +136,7 @@ protected:
     controller_params.lambda_ = settings.lambda;
     controller_params.dynamics_rollout_dim_ = dim3(settings.DYN_BLOCK_X, settings.DYN_BLOCK_Y, 1);
     controller_params.cost_rollout_dim_ = dim3(settings.COST_BLOCK_X, 1, 1);
-    controller_params.num_iters_ = settings.num_iters;
+    controller_params.num_iters_ = settings.iteration_count;
     // controller_params.optimization_stride_ = settings.optimization_stride;
 
     HANDLE_ERROR(cudaStreamCreate(&stream));

@@ -7,7 +7,11 @@
 struct CommonSettings
 {
   static const int num_timesteps = 100;
+  static const int DYN_BLOCK_X = 64;
+  static const int DYN_BLOCK_Y = 4;
+  const int COST_BLOCK_X = 64;
   const int iteration_count = 1;
+  const int optimization_stride = 1;
   const float resolution = 0.1;       // [meter / cell]
   const float footprint_size = 0.15;  // [m]
   const float origin_x = 0.0f;        // [m]
@@ -69,7 +73,7 @@ struct AutorallySettings
   const float dt = 1.0f/50.0f;
   const int optimization_stride = 1;
   const int num_iterations = 10000;
-  const int num_iters = 1;
+  const int iteration_count = 1;
 
   const float lambda = 6.66f;
   const float alpha = 0.0f;
