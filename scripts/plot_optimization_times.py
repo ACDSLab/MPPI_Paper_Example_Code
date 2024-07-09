@@ -6,6 +6,7 @@ import os
 import pandas as pd
 
 import matplotlib
+
 # plt.rcParams.update({'font.size': 18})
 plt.rc("axes", titlesize=16)
 plt.rc("axes", labelsize=16)
@@ -15,6 +16,7 @@ matplotlib.rcParams["pdf.fonttype"] = 42
 matplotlib.rcParams["ps.fonttype"] = 42
 matplotlib.rcParams["axes.spines.top"] = False
 matplotlib.rcParams["axes.spines.right"] = False
+
 
 def plot_csv_files(loc, graph_type="GPU", compare_across="GPU"):
     print("starting folder: {}".format(loc))
@@ -29,7 +31,16 @@ def plot_csv_files(loc, graph_type="GPU", compare_across="GPU"):
             csv_files.append(loc_i)
     df = pd.concat(map(pd.read_csv, csv_files), ignore_index=True, sort=True)
     df.drop_duplicates(inplace=True)
-    df = df[["Processor", "GPU", "Num Rollouts", "Method", "Mean Optimization Time (ms)", " Std. Dev. Time (ms)"]]
+    df = df[
+        [
+            "Processor",
+            "GPU",
+            "Num Rollouts",
+            "Method",
+            "Mean Optimization Time (ms)",
+            " Std. Dev. Time (ms)",
+        ]
+    ]
     # torchrl_data = df.loc[df["Method"] == "torchrl"]
     df = df.sort_values(by=["Num Rollouts"])
     methods = df.Method.unique()
@@ -40,7 +51,17 @@ def plot_csv_files(loc, graph_type="GPU", compare_across="GPU"):
     cpu_names = np.flip(cpu_names)
     gpu_names.sort()
     methods.sort()
-    colors = ["red", "blue", "green", "orange", "cyan", "xkcd:pink", "xkcd:brown", "xkcd:sky blue", "xkcd:magenta"]
+    colors = [
+        "red",
+        "blue",
+        "green",
+        "orange",
+        "cyan",
+        "xkcd:pink",
+        "xkcd:brown",
+        "xkcd:sky blue",
+        "xkcd:magenta",
+    ]
     constant_device_title = ""
     other_device_type = ""
     if compare_across == "GPU":
@@ -53,13 +74,27 @@ def plot_csv_files(loc, graph_type="GPU", compare_across="GPU"):
         other_device_type = "GPU"
     if graph_type == "gpu":
         for method in methods:
-            plt.errorbar("Num Rollouts", "Mean Optimization Time (ms)", yerr=" Std. Dev. Time (ms)", data=df.loc[df["Method"] == method])
+            plt.errorbar(
+                "Num Rollouts",
+                "Mean Optimization Time (ms)",
+                yerr=" Std. Dev. Time (ms)",
+                data=df.loc[df["Method"] == method],
+            )
         plt.legend(labels=methods)
     else:
         for i, device in enumerate(device_list):
-            plt.errorbar("Num Rollouts", "Mean Optimization Time (ms)", yerr=" Std. Dev. Time (ms)",
-                         color=colors[i], capsize=2,
-                         data=df.loc[(df["Method"] == graph_type) & (df[compare_across] == device) & (df[other_device_type] == constant_device_title)])
+            plt.errorbar(
+                "Num Rollouts",
+                "Mean Optimization Time (ms)",
+                yerr=" Std. Dev. Time (ms)",
+                color=colors[i],
+                capsize=2,
+                data=df.loc[
+                    (df["Method"] == graph_type)
+                    & (df[compare_across] == device)
+                    & (df[other_device_type] == constant_device_title)
+                ],
+            )
         plt.legend(labels=device_list)
     plt.xscale("log")
     plt.yscale("log")
@@ -93,6 +128,7 @@ def plot_csv_files(loc, graph_type="GPU", compare_across="GPU"):
         plt.savefig("{}_results.pdf".format(file_name_type), bbox_inches="tight")
     # plt.show()
 
+
 if __name__ == "__main__":
     prefix = os.path.expanduser("~/workspaces/mppi_workspace/")
     csv_files = os.getcwd()
@@ -102,5 +138,3 @@ if __name__ == "__main__":
     compare_across = "Processor"
     compare_across = "GPU"
     plot_csv_files(csv_files, graph_type, compare_across)
-
-

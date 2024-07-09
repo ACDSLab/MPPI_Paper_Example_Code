@@ -7,6 +7,7 @@ import pandas as pd
 import re
 
 import matplotlib
+
 plt.rc("axes", titlesize=16)
 plt.rc("axes", labelsize=16)
 plt.rc("xtick", labelsize=14)
@@ -15,6 +16,7 @@ matplotlib.rcParams["pdf.fonttype"] = 42
 matplotlib.rcParams["ps.fonttype"] = 42
 matplotlib.rcParams["axes.spines.top"] = False
 matplotlib.rcParams["axes.spines.right"] = False
+
 
 def plot_csv_files(file_names):
     print("starting folder: {}".format(file_names))
@@ -29,8 +31,20 @@ def plot_csv_files(file_names):
             csv_files.append(loc_i)
     df = pd.concat(map(pd.read_csv, csv_files), ignore_index=True, sort=True)
     df.drop_duplicates(inplace=True)
-    df = df[["Processor", "GPU", "Num Rollouts", "Method", "Mean Optimization Time (ms)", " Std. Dev. Time (ms)",
-             "Step Size", "Cost Min", "Cost Mean", "Cost Variance"]]
+    df = df[
+        [
+            "Processor",
+            "GPU",
+            "Num Rollouts",
+            "Method",
+            "Mean Optimization Time (ms)",
+            " Std. Dev. Time (ms)",
+            "Step Size",
+            "Cost Min",
+            "Cost Mean",
+            "Cost Variance",
+        ]
+    ]
     df.replace("Dynamic Mirror Descent MPPI", "DMD-MPC", inplace=True)
 
     # Get relevant column data
@@ -45,46 +59,87 @@ def plot_csv_files(file_names):
     gpus_list.sort()
     method_list.sort()
     num_rollouts_list.sort()
+
     def sqrt_cost_var(row):
         return np.sqrt(row["Cost Variance"])
+
     df["Cost Std Dev"] = df.apply(sqrt_cost_var, axis=1)
 
     # Create plots
     num_rows_subplot = 1
     num_cols_subplot = 2
-    fig, axes = plt.subplots(num_rows_subplot, num_cols_subplot, figsize=(num_cols_subplot * 5, num_rows_subplot * 5), sharex=True)
+    fig, axes = plt.subplots(
+        num_rows_subplot,
+        num_cols_subplot,
+        figsize=(num_cols_subplot * 5, num_rows_subplot * 5),
+        sharex=True,
+    )
     plot_time_over_step_size = True
     # fig, axes = plt.subplots(1, 1)
     if not hasattr(axes, "__iter__"):
         axes = [axes]
-    colors = ["red", "blue", "green", "orange", "cyan", "xkcd:pink", "xkcd:brown", "xkcd:sky blue", "xkcd:magenta"]
+    colors = [
+        "red",
+        "blue",
+        "green",
+        "orange",
+        "cyan",
+        "xkcd:pink",
+        "xkcd:brown",
+        "xkcd:sky blue",
+        "xkcd:magenta",
+    ]
     plots_list = []
     for method in method_list:
         for num_rollouts in num_rollouts_list:
             plots_list.append((method, num_rollouts))
     for i, (method, num_rollouts) in enumerate(plots_list):
-        local_df = df.loc[(df["Method"] == method) & (df["Num Rollouts"] == num_rollouts)]
+        local_df = df.loc[
+            (df["Method"] == method) & (df["Num Rollouts"] == num_rollouts)
+        ]
         cost_mean_min = local_df.min()["Cost Mean"]
         step_size_at_min = local_df.loc[local_df["Cost Mean"].idxmin()]["Step Size"]
-        axes[0].scatter(step_size_at_min, cost_mean_min, s=100, color=colors[i], marker="x")
-        axes[0].errorbar("Step Size", "Cost Mean", yerr="Cost Std Dev",
-                     color=colors[i], capsize=2,
-                     data=local_df, label=method + " " + str(num_rollouts) + " Samples")
+        axes[0].scatter(
+            step_size_at_min, cost_mean_min, s=100, color=colors[i], marker="x"
+        )
+        axes[0].errorbar(
+            "Step Size",
+            "Cost Mean",
+            yerr="Cost Std Dev",
+            color=colors[i],
+            capsize=2,
+            data=local_df,
+            label=method + " " + str(num_rollouts) + " Samples",
+        )
     # Second plot if needed
     if len(axes) > 1 and not plot_time_over_step_size:
         for method in method_list:
             local_df = df.loc[(df["Method"] == method) & (df["Step Size"] == 1.0)]
             local_df = local_df.sort_values(by=["Num Rollouts"])
-            axes[1].errorbar("Num Rollouts", "Mean Optimization Time (ms)", yerr=" Std. Dev. Time (ms)",
-                         color=colors[i+2], capsize=2,
-                         data=local_df, label="_")
+            axes[1].errorbar(
+                "Num Rollouts",
+                "Mean Optimization Time (ms)",
+                yerr=" Std. Dev. Time (ms)",
+                color=colors[i + 2],
+                capsize=2,
+                data=local_df,
+                label="_",
+            )
     elif len(axes) > 1 and plot_time_over_step_size:
         for i, (method, num_rollouts) in enumerate(plots_list):
-            local_df = df.loc[(df["Method"] == method) & (df["Num Rollouts"] == num_rollouts)]
-            axes[1].errorbar("Step Size", "Mean Optimization Time (ms)", yerr=" Std. Dev. Time (ms)",
-                         color=colors[i], capsize=2,
-                         data=local_df, label=method + " " + str(num_rollouts) + " Samples")
-                         # data=local_df, label="_")
+            local_df = df.loc[
+                (df["Method"] == method) & (df["Num Rollouts"] == num_rollouts)
+            ]
+            axes[1].errorbar(
+                "Step Size",
+                "Mean Optimization Time (ms)",
+                yerr=" Std. Dev. Time (ms)",
+                color=colors[i],
+                capsize=2,
+                data=local_df,
+                label=method + " " + str(num_rollouts) + " Samples",
+            )
+            # data=local_df, label="_")
     if len(axes) > 1:
         axes[1].legend()
     else:
@@ -106,6 +161,7 @@ def plot_csv_files(file_names):
     file_name_prefix = gpus_list[0]
     file_name_prefix = file_name_prefix.replace(" ", "_").lower()
     fig.savefig("{}_dmd_results.pdf".format(file_name_prefix), bbox_inches="tight")
+
 
 def plot_npy_files(file_names):
     all_data = {}
@@ -160,7 +216,9 @@ def plot_npy_files(file_names):
                 all_data[method][rollout_count] = {data_type: data}
             else:
                 all_data[method][rollout_count][data_type] = data
-    fig, axes = plt.subplots(3, gridspec_kw={"height_ratios": [1, 2, 1]})#, sharex=True)
+    fig, axes = plt.subplots(
+        3, gridspec_kw={"height_ratios": [1, 2, 1]}
+    )  # , sharex=True)
     fig.set_tight_layout(True)
     for axis in axes:
         axis.spines["top"].set_visible(False)
@@ -170,7 +228,15 @@ def plot_npy_files(file_names):
     axes[1].set(adjustable="box", aspect="equal")
     axes[2].set_ylabel("Cost")
     axes[2].set_xlabel("Time")
-    colors = ["blue", "xkcd:sky blue", "green", "purple", "red", "orange", "xkcd:lavender"]
+    colors = [
+        "blue",
+        "xkcd:sky blue",
+        "green",
+        "purple",
+        "red",
+        "orange",
+        "xkcd:lavender",
+    ]
     color_choice = 0
     legend_list = []
     for method in all_data.keys():
@@ -180,9 +246,27 @@ def plot_npy_files(file_names):
             cost_data = all_data[method][num_rollouts]["cost"][:, 0]
             label_name = method + " " + num_rollouts
             if num_rollouts == "1024":
-                axes[0].plot(range(control_data.shape[0]), control_data, label=label_name, alpha=0.75, color=colors[color_choice])
-            axes[2].plot(range(cost_data.shape[0]), cost_data, label=label_name, alpha=0.75, color=colors[color_choice])
-            axes[1].plot(state_data[:, 0], state_data[:, 1], label=label_name, alpha=0.75, color=colors[color_choice])
+                axes[0].plot(
+                    range(control_data.shape[0]),
+                    control_data,
+                    label=label_name,
+                    alpha=0.75,
+                    color=colors[color_choice],
+                )
+            axes[2].plot(
+                range(cost_data.shape[0]),
+                cost_data,
+                label=label_name,
+                alpha=0.75,
+                color=colors[color_choice],
+            )
+            axes[1].plot(
+                state_data[:, 0],
+                state_data[:, 1],
+                label=label_name,
+                alpha=0.75,
+                color=colors[color_choice],
+            )
             # axes[1].plot(range(state_data.shape[0]), state_data, label=label_name, alpha=0.75, color=colors[color_choice])
             print("{} is {}".format(label_name, colors[color_choice]))
             color_choice += 1
@@ -194,10 +278,11 @@ def plot_npy_files(file_names):
     # axes[1].plot(times, goal_pos, "r--", label="goal")
     # legend_list.append("goal")
     # fig.legend()
-    axes[1].set_xlim([-2.25,2.25])
-    axes[1].set_ylim([-2.25,2.25])
+    axes[1].set_xlim([-2.25, 2.25])
+    axes[1].set_ylim([-2.25, 2.25])
     plt.legend(legend_list)
     plt.show()
+
 
 if __name__ == "__main__":
     npy_files = os.getcwd()
