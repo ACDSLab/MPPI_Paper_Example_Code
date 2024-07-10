@@ -2,7 +2,7 @@
 #include <mppi/cost_functions/cartpole/cartpole_quadratic_cost.cuh>
 #include <mppi/dynamics/cartpole/cartpole_dynamics.cuh>
 #include <mppi/feedback_controllers/DDP/ddp.cuh>
-#include <mppi_paper_example/cartpole_plant.hpp>
+#include <mppi_paper_example/plants/cartpole_plant.hpp>
 
 const int NUM_TIMESTEPS = 100;
 const int NUM_ROLLOUTS = 2048;
