@@ -2,6 +2,7 @@
 #include <ctime>
 #include <fstream>
 
+#include <cuda_runtime.h> // for float2 definition
 #include <stdlib.h>
 
 struct CommonSettings

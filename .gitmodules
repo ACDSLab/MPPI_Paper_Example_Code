@@ -1,4 +1,4 @@
 [submodule "submodules/MPPI-Generic"]
 	path = submodules/MPPI-Generic
-	url = https://github.gatech.edu/ACDS/MPPI-Generic.git
-	branch = feature/sampling_distributions_rmppi
+	url = https://github.com/ACDSLab/MPPI-Generic.git
+	branch = main

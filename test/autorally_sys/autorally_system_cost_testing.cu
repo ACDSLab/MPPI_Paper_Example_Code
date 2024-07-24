@@ -23,7 +23,7 @@
 #include <utility>
 
 const int NUM_TIMESTEPS = AutorallySettings::num_timesteps;
-using DYN_T = NeuralNetModel<7, 2, 3, 6, 32, 32, 4>;
+using DYN_T = NeuralNetModel<7, 2, 3>;
 using COST_T = ARModifiedCost;
 using FB_STATIC_T = DDPFeedback<DYN_T, NUM_TIMESTEPS>;
 using SAMPLING_T = mppi::sampling_distributions::GaussianDistribution<DYN_T::DYN_PARAMS_T>;
@@ -266,7 +266,7 @@ protected:
     for (int t = 0; t < this->settings.num_iterations; t++)
     {
       auto start = std::chrono::steady_clock::now();
-      plant->updateState(plant->current_state_, t * this->settings.dt);
+      plant->updateState(plant->current_state_, (t + 1) * this->settings.dt);
       plant->runControlIteration(&alive);
       auto end = std::chrono::steady_clock::now();
       double duration_ms = (end - start).count() / 1e6;

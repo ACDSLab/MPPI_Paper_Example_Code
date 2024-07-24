@@ -284,7 +284,7 @@ protected:
     for (int t = 0; t < this->settings.num_iterations; t++)
     {
       auto start = std::chrono::steady_clock::now();
-      plant->updateState(plant->current_state_, t * this->settings.dt);
+      plant->updateState(plant->current_state_, (t + 1) * this->settings.dt);
       plant->runControlIteration(&alive);
       auto end = std::chrono::steady_clock::now();
       double duration_ms = (end - start).count() / 1e6;

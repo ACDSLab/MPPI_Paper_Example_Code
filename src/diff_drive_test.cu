@@ -7,8 +7,6 @@
 
 #include <stdio.h>
 
-#define USE_NEW_API
-
 const int NUM_TIMESTEPS = 100;
 const int NUM_ROLLOUTS = 2048;
 const int DYN_BLOCK_X = 32;
@@ -17,12 +15,8 @@ const int DYN_BLOCK_Y = DYN_T::STATE_DIM;
 // using COST_T = QuadraticCost<DYN_T>;
 using COST_T = DiffDriveCost;
 using FB_T = DDPFeedback<DYN_T, NUM_TIMESTEPS>;
-#ifdef USE_NEW_API
 using SAMPLING_T = mppi::sampling_distributions::GaussianDistribution<DYN_T::DYN_PARAMS_T>;
 using CONTROLLER_T = VanillaMPPIController<DYN_T, COST_T, FB_T, NUM_TIMESTEPS, NUM_ROLLOUTS, SAMPLING_T>;
-#else
-using CONTROLLER_T = VanillaMPPIController<DYN_T, COST_T, FB_T, NUM_TIMESTEPS, NUM_ROLLOUTS, DYN_BLOCK_X, DYN_BLOCK_Y>;
-#endif
 
 using CONTROLLER_PARAMS_T = CONTROLLER_T::TEMPLATED_PARAMS;
 using control_array = CONTROLLER_T::control_array;
@@ -36,7 +30,6 @@ int main(int argc, char** argv)
   COST_T* cost = new COST_T();
   // set up feedback controller
   FB_T* fb_controller = new FB_T(dynamics, dt);
-#ifdef USE_NEW_API
   SAMPLING_T* sampler = new SAMPLING_T();
   auto sampler_params = sampler->getParams();
   for (int i = 0; i < DYN_T::CONTROL_DIM; i++)
@@ -44,19 +37,13 @@ int main(int argc, char** argv)
     sampler_params.std_dev[i] = 1.0;
   }
   sampler->setParams(sampler_params);
-#endif
 
   // set up MPPI Controller
   CONTROLLER_PARAMS_T controller_params;
   controller_params.dt_ = dt;
   controller_params.lambda_ = 1.0;
-#ifndef USE_NEW_API
-  controller_params.control_std_dev_ = DYN_T::control_array::Ones();
-  CONTROLLER_T* controller = new CONTROLLER_T(dynamics, cost, fb_controller, controller_params);
-#else
   controller_params.dynamics_rollout_dim_ = dim3(DYN_BLOCK_X, DYN_BLOCK_Y, 1);
   CONTROLLER_T* controller = new CONTROLLER_T(dynamics, cost, fb_controller, sampler, controller_params);
-#endif
 
   // set up initial state
   DYN_T::state_array x = DYN_T::state_array::Zero();
@@ -69,8 +56,6 @@ int main(int argc, char** argv)
   delete fb_controller;
   delete cost;
   delete dynamics;
-#ifdef USE_NEW_API
   delete sampler;
-#endif
   return 0;
 }

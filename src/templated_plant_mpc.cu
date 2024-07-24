@@ -71,7 +71,7 @@ int main(int argc, char** argv)
   std::atomic<bool> alive(true);
   for (int t = 0; t < 10000; t++)
   {
-    plant.updateState(plant.current_state_, t * dt);
+    plant.updateState(plant.current_state_, (t + 1) * dt);
     plant.runControlIteration(&alive);
     // std::cout << "t: " << t * dt << ", state: " <<
     // plant.current_state_.transpose() << std::endl;

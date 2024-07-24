@@ -44,7 +44,7 @@ public:
   // Destructor
   ~DMDMPPIController();
 
-  std::string getControllerName()
+  std::string getControllerName() const override
   {
     return "Dynamic Mirror Descent MPPI";
   };

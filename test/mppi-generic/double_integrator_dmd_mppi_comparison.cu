@@ -214,7 +214,7 @@ TYPED_TEST(DMDMPPITest, DifferentNumSamples)
       for (int t = 0; t < this->simulation_time_horizon; t++)
       {
         auto start = std::chrono::steady_clock::now();
-        this->plant->updateState(this->plant->current_state_, t * this->dt);
+        this->plant->updateState(this->plant->current_state_, (t + 1) * this->dt);
         this->plant->runControlIteration(&alive);
         auto end = std::chrono::steady_clock::now();
         double duration = (end - start).count() / 1e6;

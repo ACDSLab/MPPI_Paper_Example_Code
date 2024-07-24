@@ -36,12 +36,7 @@ include_directories(SYSTEM
   )
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-if (NOT BUILD_TESTS)
-  # WIll be built as part of MPPI-Generic if BUILD_TESTS is true
-  add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic/submodules/cnpy ${CMAKE_BINARY_DIR}/submodules/MPPI-Generic/submodules/cnpy)
-endif()
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic ${CMAKE_BINARY_DIR}/submodules/MPPI-Generic)
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic/submodules/cnpy)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
