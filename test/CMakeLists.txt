@@ -14,7 +14,7 @@ foreach(T_FILE IN LISTS HEADERS)
 endforeach()
 include_directories(${PROJECT_BINARY_DIR}/include)
 
-if (ament_cmake_FOUND)
+if (nav2_mppi_controller_FOUND)
   add_subdirectory(ros2)
 endif()
 add_subdirectory(mppi-generic)

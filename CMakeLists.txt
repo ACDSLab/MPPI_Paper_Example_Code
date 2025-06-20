@@ -23,20 +23,17 @@ find_package(ament_cmake QUIET)
 if (ament_cmake_FOUND)
   set(ROS2_PKGS nav2_mppi_controller rclcpp)
   foreach(PKG IN LISTS ROS2_PKGS)
-    find_package(${PKG} REQUIRED)
+    find_package(${PKG} QUIET)
   endforeach()
 endif()
-find_package(Eigen3 REQUIRED)
 find_package(OpenCV REQUIRED)
 
 include_directories(SYSTEM
-  ${EIGEN3_INCLUDE_DIR}
-  ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
   ${OpenCV_INCLUDE_DIRS}
-  )
+)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
-add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic ${CMAKE_BINARY_DIR}/submodules/MPPI-Generic)
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic)
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
@@ -44,6 +41,44 @@ set(BUILD_TESTS ON)
 if (BUILD_TESTS)
   if (ament_cmake_FOUND)
     find_package(ament_cmake_gtest REQUIRED)
+  else()
+    set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic/cmake/Modules")
+    ############################################################
+    # copied from
+    # https://github.com/google/googletest/tree/master/googletest#incorporating-into-an-existing-cmake-project
+    ############################################################
+    # Download and unpack googletest at configure time
+    if (NOT TARGET gtest_main)
+      list(GET CMAKE_MODULE_PATH -1 MPPI_GENERIC_MODULES)
+      configure_file(${MPPI_GENERIC_MODULES}/CMakeLists.txt.gtest.in
+                     ${PROJECT_BINARY_DIR}/googletest-download/CMakeLists.txt)
+      execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/googletest-download )
+      if(result)
+        message(FATAL_ERROR "CMake step for googletest failed: ${result}")
+      endif()
+      execute_process(COMMAND ${CMAKE_COMMAND} --build .
+        RESULT_VARIABLE result
+        WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/googletest-download )
+      if(result)
+        message(FATAL_ERROR "Build step for googletest failed: ${result}")
+      endif()
+
+      # Prevent overriding the parent project's compiler/linker
+      # settings on Windows
+      set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+
+      # Prevent googletest installation
+      set(INSTALL_GTEST OFF)
+
+      # Add googletest directly to our build. This defines
+      # the gtest and gtest_main targets.
+      add_subdirectory(${PROJECT_BINARY_DIR}/googletest-src
+                       ${PROJECT_BINARY_DIR}/googletest-build)
+    endif()
+
+    include(GoogleTest)
   endif()
   add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/test)
 endif()

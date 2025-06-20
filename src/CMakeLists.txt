@@ -5,14 +5,13 @@ foreach(T_FILE IN LISTS CUDA_TARGET_SRCS)
   get_filename_component(T_NAME ${T_FILE} NAME_WE)
   add_executable(${T_NAME} ${T_FILE})
   target_include_directories(${T_NAME} PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
-  target_link_libraries(${T_NAME}
-                        ${MPPI_HEADER_LIBRARY_NAME}
+  target_link_libraries(${T_NAME} MPPI::MPPI
                         )
   # set_target_properties(${T_NAME} PROPERTIES FOLDER test)
 endforeach()
 
 # Create ROS2 executable if possible
-if (ament_cmake_FOUND)
+if (nav2_mppi_controller_FOUND)
   set(ROS2_EXECUTABLE ros2_mppi)
   add_executable(${ROS2_EXECUTABLE} ROS2_MPPI.cpp)
   ament_target_dependencies(${ROS2_EXECUTABLE}
