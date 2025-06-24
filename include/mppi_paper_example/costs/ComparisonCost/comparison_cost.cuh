@@ -69,6 +69,10 @@ public:
 
   void GPUSetup();
 
+  void paramsToDevice();
+
+  void freeCudaMem();
+
   std::string getCostFunctionName() const override
   {
     return "ROS2 Comparison Cost";

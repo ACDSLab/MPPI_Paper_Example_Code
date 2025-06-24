@@ -5,6 +5,7 @@ foreach(T_FILE IN LISTS CUDA_TARGET_SRCS)
   get_filename_component(T_NAME ${T_FILE} NAME_WE)
   add_executable(${T_NAME} ${T_FILE})
   target_include_directories(${T_NAME} PUBLIC ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+  target_compile_options(${T_NAME} PUBLIC "--diag-suppress=20012")
   target_link_libraries(${T_NAME} MPPI::MPPI
                         )
   # set_target_properties(${T_NAME} PROPERTIES FOLDER test)

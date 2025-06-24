@@ -21,6 +21,16 @@ COMPARISON_COST::~ComparisonCost()
 }
 
 COMPARISON_COST_TEMPLATE
+void COMPARISON_COST::paramsToDevice()
+{
+  if (this->GPUMemStatus_)
+  {
+    tex_helper_->copyToDevice();
+  }
+  PARENT_CLASS::paramsToDevice();
+}
+
+COMPARISON_COST_TEMPLATE
 void COMPARISON_COST::GPUSetup()
 {
   tex_helper_->GPUSetup();
@@ -29,6 +39,16 @@ void COMPARISON_COST::GPUSetup()
 
   HANDLE_ERROR(cudaMemcpyAsync(&(this->cost_d_->tex_helper_), &(tex_helper_->ptr_d_), sizeof(TwoDTextureHelper<float>*),
                                cudaMemcpyHostToDevice, this->stream_));
+}
+
+COMPARISON_COST_TEMPLATE
+void COMPARISON_COST::freeCudaMem()
+{
+  if (this->GPUMemStatus_)
+  {
+    tex_helper_->freeCudaMem();
+  }
+  PARENT_CLASS::freeCudaMem();
 }
 
 COMPARISON_COST_TEMPLATE
