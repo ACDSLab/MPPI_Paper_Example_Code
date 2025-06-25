@@ -178,15 +178,18 @@ RUN if [ "${UBUNTU_VERSION}" = "16.04" ] ; then git clone https://github.com/Kit
     make -j$(expr $(nproc) - 2) install && \
     make clean; fi
 
-# Install an eigen version compatible with CUDA 10+
+# Install an eigen version compatible with CUDA 10+ on older Ubuntu Versions
 WORKDIR /repos
-RUN git clone https://gitlab.com/libeigen/eigen.git --branch 3.3.7 --depth 1 && \
-    sed -i "s/#include <host_defines.h>/#include <cuda_runtime.h>/" /repos/eigen/Eigen/Core && \
-    cd eigen && \
-    mkdir build && cd build && \
-    cmake .. && \
-    make install && \
-    make clean
+RUN if dpkg --compare-versions "${UBUNTU_VERSION}" lt "20.04" ; then \
+      git clone https://gitlab.com/libeigen/eigen.git --branch 3.3.7 --depth 1 && \
+      sed -i "s/#include <host_defines.h>/#include <cuda_runtime.h>/" /repos/eigen/Eigen/Core && \
+      cd eigen && \
+      mkdir build && cd build && \
+      cmake .. && \
+      make install && \
+      make clean; \
+    fi
+
 
 #Ensure that the cuda version is set properly
 SHELL ["/bin/bash", "-c"]
