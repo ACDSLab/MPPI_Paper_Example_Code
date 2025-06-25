@@ -26,112 +26,123 @@ RUN echo "deb http://packages.ros.org/ros2/ubuntu ${UBUNTU_NAME} main" > /etc/ap
 RUN apt-key adv --keyserver 'hkp://keyserver.ubuntu.com:80' --recv-key C1CF6E31E6BADE8868B172B4F42ED6FBAB17C654
 
 # setup environment
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
+# ENV LANG=C.UTF-8
+# ENV LC_ALL=C.UTF-8
 
 # Needed for ROS graphical applications like gazebo
-ENV NVIDIA_VISIBLE_DEVICES \
-    ${NVIDIA_VISIBLE_DEVICES:-all}
-ENV NVIDIA_DRIVER_CAPABILITIES \
-    ${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
+ENV NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES:-all}
+ENV NVIDIA_DRIVER_CAPABILITIES=${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
 
+# remove /usr/bin/man redirect, man page exclusion, and install manpages so new packages have man pages
+RUN if [ -f /usr/bin/man ]; then \
+      rm /usr/bin/man; \
+      dpkg-divert --remove --rename /usr/bin/man; \
+    fi && \
+    if [ -f /etc/dpkg/dpkg.cfg.d/excludes ]; then \
+      sed -i '/path-exclude=\/usr\/share\/man/d' /etc/dpkg/dpkg.cfg.d/excludes; \
+    fi && \
+    apt update && DEBIAN_FRONTEND=noninteractive apt install -q -y --no-install-recommends --no-install-suggests \
+    man-db \
+    manpages \
+    && rm -rf /var/lib/apt/lists/*
+
+# Setup graphical libraries
 RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -q -y --no-install-recommends --no-install-suggests \
-  libxau6 \
-  libxdmcp6 \
-  libxcb1 \
-  libxext6 \
-  libx11-6 \
-  libglvnd-dev \
-  libgl1-mesa-dev \
-  libegl1-mesa-dev \
-  libgles2-mesa-dev \
-  libglvnd0 \
-  libgl1 \
-  libglx0 \
-  libegl1 \
-  libgles2 \
-  && rm -rf /var/lib/apt/lists/*
+    libxau6 \
+    libxdmcp6 \
+    libxcb1 \
+    libxext6 \
+    libx11-6 \
+    libglvnd-dev \
+    libgl1-mesa-dev \
+    libegl1-mesa-dev \
+    libgles2-mesa-dev \
+    libglvnd0 \
+    libgl1 \
+    libglx0 \
+    libegl1 \
+    libgles2 \
+    && rm -rf /var/lib/apt/lists/*
 
-ENV ROS_DISTRO ${ROS_DISTRO_NAME}
+COPY docker/misc/10_nvidia.json /usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
-# Last line about deleting docker-clean allows for tab autocomplete. Source:
-# https://dev.to/tetractius/tetraquicky09-get-back-autocomplete-in-a-docker-container-gob
-RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -q -y --no-install-recommends --no-install-suggests \
-  autoconf \
-  automake \
-  build-essential \
-  bash-completion \
-  cmake \
-  curl \
-  gdb \
-  git \
-  g++ \
-  htop \
-  iputils-ping \
-  less \
-  libssl-dev \
-  libtool \
-  locales \
-  lsb-release \
-  net-tools \
-  pigz \
-  python3-colcon-common-extensions \
-  python3-colcon-mixin \
-  python3-pip \
-  python3-rosdep \
-  python3-tk \
-  python3-vcstool \
-  software-properties-common \
-  sudo \
-  tmux \
-  tzdata \
-  valgrind \
-  vim \
-  udev \
-  unzip \
-  wget \
-  xdg-user-dirs \
-  && rm -rf /var/lib/apt/lists/* \
-  && rm /etc/apt/apt.conf.d/docker-clean
-
-# Install TensorRT and CUDNN
-RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -q -y --no-install-recommends --no-install-suggests\
-  # libnvinfer8 \
-  libnvinfer-dev \
-  # libnvonnxparsers8 \
-  # libnvparsers8 \
-  libnvparsers-dev \
-  # libnvinfer-plugin8 \
-  libnvinfer-plugin-dev \
-  libnvonnxparsers-dev \
-  && rm -rf /var/lib/apt/lists/*
+ENV ROS_DISTRO=${ROS_DISTRO_NAME}
 
 # Nice to have programs, separated from the
 # other installations because the other ones
 # take forever and these might change
+# Last line about deleting docker-clean allows for tab autocomplete. Source:
+# https://dev.to/tetractius/tetraquicky09-get-back-autocomplete-in-a-docker-container-gob
 RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -q -y --no-install-recommends --no-install-suggests \
-  ros-${ROS_DISTRO_NAME}-desktop \
-  ros-dev-tools \
-  # ros-${ROS_DISTRO_NAME}-desktop \
-  ros-${ROS_DISTRO_NAME}-navigation2 \
-  # ros-${ROS_DISTRO_NAME}-perception \
-  # ros-${ROS_DISTRO_NAME}-viz \
-  protobuf-compiler \
-  libprotobuf-dev \
-  # && rosdep init \
-  && rm -rf /var/lib/apt/lists/*
+    autoconf \
+    automake \
+    bash-completion \
+    build-essential \
+    cmake \
+    curl \
+    g++ \
+    gdb \
+    git \
+    git-lfs \
+    htop \
+    iputils-ping \
+    less \
+    libssl-dev \
+    libtool \
+    locales \
+    lsb-release \
+    net-tools \
+    pigz \
+    python3-colcon-common-extensions \
+    python3-colcon-mixin \
+    python3-pip \
+    python3-rosdep \
+    python3-tk \
+    python3-vcstool \
+    software-properties-common \
+    sudo \
+    tmux \
+    tzdata \
+    udev \
+    unzip \
+    valgrind \
+    vim \
+    wget \
+    xdg-user-dirs \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm /etc/apt/apt.conf.d/docker-clean
+
+# Install ROS-specific packages and install navigation2 if we are in ROS 2
+RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -q -y --no-install-recommends --no-install-suggests \
+    ros-${ROS_DISTRO_NAME}-desktop \
+    ros-dev-tools \
+    # ros-${ROS_DISTRO_NAME}-perception \
+    # ros-${ROS_DISTRO_NAME}-viz \
+    protobuf-compiler \
+    libprotobuf-dev && \
+    if dpkg --compare-versions "${UBUNTU_VERSION}" ge "22.04" ; then \
+      DEBIAN_FRONTEND=noninteractive apt install -q -y --no-install-recommends --no-install-suggests \
+        ros-${ROS_DISTRO_NAME}-navigation2; \
+    fi \
+    # && rosdep init \
+    && rm -rf /var/lib/apt/lists/*
 
 
 # Set up the locale
 RUN locale-gen en_US.UTF-8
-ENV LANG en_US.UTF-8
-ENV LANGUAGE en_US:en
-ENV LC_ALL en_US.UTF-8
+ENV LANG=en_US.UTF-8
+ENV LANGUAGE=en_US:en
+ENV LC_ALL=en_US.UTF-8
 
 # Pip packages to get basic ROS and rosbag working in python3
-RUN pip3 install pycryptodomex \
-  python-gnupg \
-  rospkg
+RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -q -y --no-install-recommends --no-install-suggests \
+    python3-pycryptodome \
+    python3-gnupg \
+    python3-rospkg \
+    && rm -rf /var/lib/apt/lists/*
+# RUN pip3 install pycryptodomex \
+#   python-gnupg \
+#   rospkg
 
 # Create a script to run command with ros params
 RUN echo \#'\
@@ -156,6 +167,7 @@ RUN if [ "${UBUNTU_VERSION}" = "16.04" ] ; then git clone https://github.com/pro
     make install && \
     make clean && \
     ldconfig; fi
+
 # We need a newer CMake on 16.04
 WORKDIR /repos
 RUN if [ "${UBUNTU_VERSION}" = "16.04" ] ; then git clone https://github.com/Kitware/CMake.git --branch v3.19.4 --depth 1 && \
@@ -165,16 +177,6 @@ RUN if [ "${UBUNTU_VERSION}" = "16.04" ] ; then git clone https://github.com/Kit
     cmake .. && \
     make -j$(expr $(nproc) - 2) install && \
     make clean; fi
-
-WORKDIR /repos
-RUN git clone https://github.com/onnx/onnx.git --branch v1.9.0 --depth 1 && \
-    cd onnx && \
-    mkdir build && \
-    cd build && \
-    cmake .. && \
-    make -j$(expr $(nproc) - 2) && \
-    make install && \
-    make clean
 
 # Install an eigen version compatible with CUDA 10+
 WORKDIR /repos
@@ -206,49 +208,39 @@ ENV QT_X11_NO_MITSHM=1
 # # Must be declared a volume after its permissions are set or else they don't
 # # actually get set
 # VOLUME /home/${USER_NAME}/.ros
+
 # Create Users
-ARG INTERNAL_USER_ID=902811
-ARG INTERNAL_GROUP_ID=26261
-ARG INTERNAL_USER_NAME=internal
-ARG INTERNAL_GROUP_NAME=internal
-
-# setup user with same UID/GID and group name as the user outside the container
-RUN if getent group ${INTERNAL_GROUP_NAME} ; then groupdel ${INTERNAL_GROUP_NAME}; fi && \
-    groupadd -g ${INTERNAL_GROUP_ID} ${INTERNAL_GROUP_NAME} && \
-    useradd --create-home -r -p "" -l -u ${INTERNAL_USER_ID} -g ${INTERNAL_GROUP_NAME} --shell /bin/bash ${INTERNAL_USER_NAME} && \
-    adduser ${INTERNAL_USER_NAME} sudo
-# RUN useradd --create-home -r -p "" -l -u ${USER_ID} -g ${GROUP_NAME} --shell /bin/bash ${USER_NAME} && \
-#     adduser ${USER_NAME} sudo
-
-# Set no  password
-RUN echo "${INTERNAL_USER_NAME}:docker" | chpasswd && \
-    echo "${INTERNAL_USER_NAME} ALL=NOPASSWD: ALL" >> /etc/sudoers.d/${INTERNAL_USER_NAME}
-
-
-RUN chown -R ${INTERNAL_USER_NAME}:${INTERNAL_GROUP_NAME} /repos
-USER ${INTERNAL_USER_NAME}
-
-# Now actually run rosdep update as user
-# RUN rosdep update
-WORKDIR /home/${INTERNAL_USER_NAME}
-ENV HOME /home/${INTERNAL_USER_NAME}
-
 ARG USER_ID=902819
 ARG GROUP_ID=2626
 ARG USER_NAME=docker_user
 ARG GROUP_NAME=gtperson
 
 USER root
-# Fake audio setup for Falcon
+# Fake audio setup
 RUN apt-get update && apt-get install -y alsa-utils pulseaudio-utils pulseaudio
 
-# setup user with same UID/GID and group name as the user outside the container
-RUN if getent group ${GROUP_NAME} ; then groupdel ${GROUP_NAME}; fi && \
-    groupadd -g ${GROUP_ID} ${GROUP_NAME} && \
-    useradd --create-home -r -p "" -l -u ${USER_ID} -g ${GROUP_NAME} --shell /bin/bash ${USER_NAME} && \
-    adduser ${USER_NAME} sudo
-# RUN useradd --create-home -r -p "" -l -u ${USER_ID} -g ${GROUP_NAME} --shell /bin/bash ${USER_NAME} && \
-#     adduser ${USER_NAME} sudo
+### setup user with same UID/GID and group name as the user outside the container ###
+
+# Make group with specified name and id. If a group exists (new to ubuntu24.04 images), rename
+RUN if getent group ${GROUP_NAME} ; then \
+      groupdel ${GROUP_NAME}; \
+    fi && \
+    PREV_GROUP="$(getent group ${GROUP_ID} | cut -d: -f1)"; \
+    if [[ -z "${PREV_GROUP}" ]]; then \
+      groupadd -g ${GROUP_ID} ${GROUP_NAME}; \
+    else \
+      groupmod -n ${GROUP_NAME} ${PREV_GROUP}; \
+    fi; \
+    unset PREV_GROUP
+
+# Make user with specified name and id. If a user exists (new to ubuntu24.04 images), rename
+RUN PREV_USER="$(id -u -n ${USER_ID})"; \
+    if [ $? -ne 0 ]; then \
+      useradd --create-home -r -p "" -l -u ${USER_ID} -g ${GROUP_ID} --shell /bin/bash ${USER_NAME}; \
+    else \
+      usermod -l ${USER_NAME} ${PREV_USER}; mv /home/${PREV_USER} /home/${USER_NAME}; \
+    fi; \
+    unset PREV_USER && adduser ${USER_NAME} sudo
 
 # Set no  password
 RUN echo "${USER_NAME}:docker" | chpasswd && \
@@ -261,9 +253,9 @@ USER ${USER_NAME}
 # Now actually run rosdep update as user
 # RUN rosdep update
 WORKDIR /home/${USER_NAME}
-ENV HOME /home/${USER_NAME}
+ENV HOME=/home/${USER_NAME}
 
-ENV TERM xterm-256color
+ENV TERM=xterm-256color
 
 ENTRYPOINT ["/ros_entrypoint.sh"]
 CMD ["bash"]

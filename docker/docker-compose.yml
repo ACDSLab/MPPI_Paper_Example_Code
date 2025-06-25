@@ -5,7 +5,7 @@ version: '3'
 #     driver: bridge
 
 services:
-  ros2_cuda_11_8:
+  ros_cuda:
     build:
       context: ../
       dockerfile: docker/ros_cuda.dockerfile
@@ -18,21 +18,24 @@ services:
         UBUNTU_VERSION: ${UBUNTU_VERSION}
         USER_ID: ${USER_ID}
         USER_NAME: ${USER_NAME}
-        ROS_DISTRO_NAME: iron
-    image: ros2_cuda:${ROS_DISTRO_NAME}_${CUDA_IMG_VERSION}
-    container_name: ros2_cuda_11_8
-    hostname: ros2_cuda
+        ROS_DISTRO_NAME: ${ROS_DISTRO_NAME}
+    image: ros_cuda:${ROS_DISTRO_NAME}_${CUDA_IMG_VERSION}
+    container_name: ubuntu${UBUNTU_VERSION}_ros_cuda_${CUDA_IMG_VERSION}
+    hostname: ros_cuda
     deploy:
       resources:
         reservations:
           devices:
-            - capabilities:
-              - gpu
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+            # - capabilities:
+            #   - gpu
     network_mode: host
     extra_hosts:
-      - "ros2_cuda:127.0.0.1"
+      - "ros_cuda:127.0.0.1"
     environment:
-      - "ROS_HOSTNAME=ros2_cuda"
+      - "ROS_HOSTNAME=ros_cuda"
       - "DISPLAY=${DISPLAY}"
       # - "XAUTHORITY=/tmp/.docker.xauth"
     volumes:

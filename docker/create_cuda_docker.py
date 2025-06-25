@@ -7,11 +7,11 @@ import subprocess
 
 from pathlib import Path
 
-ubuntu_dict = {"16.04": "xenial", "18.04": "bionic", "20.04": "focal", "22.04": "jammy"}
+ubuntu_dict = {"16.04": "xenial", "18.04": "bionic", "20.04": "focal", "22.04": "jammy", "24.04": "noble"}
 
-ros_dict = {"16.04": "kinetic", "18.04": "melodic", "20.04": "noetic", "22.04": "iron"}
+ros_dict = {"16.04": "kinetic", "18.04": "melodic", "20.04": "noetic", "22.04": "iron", "24.04": "kilted"}
 
-cuda_dict = {"20.04": [], "22.04": []}
+cuda_dict = {"20.04": [], "22.04": [], "24.04": []}
 
 default_ubuntu_vers = "22.04"
 default_cuda_vers = "11.8.0"
@@ -62,29 +62,29 @@ def main(args):
         user_name = "docker_user"
         group_name = "docker_user"
 
-    ubuntu_input = default_ubuntu_vers
     if args.default:
+        ubuntu_input = default_ubuntu_vers
         cuda_input = default_cuda_vers
         data_input = default_data_path
         workspace_input = default_workspace_path
     else:
-        # Get Ubuntu Version from user
-        # ubuntu_input = args.ubuntu
+        ubuntu_input = args.ubuntu
         cuda_input = args.cuda
         data_input = args.data_path
         workspace_input = args.workspace_path
-        # if ubuntu_input == "" or not ubuntu_input in ubuntu_dict:
-        #     question_str = "Version of Ubuntu would you like to use (Default: {}): ".format(default_ubuntu_vers)
-        #     question_str = blue_wrapper(question_str)
-        #     # print("What version of Ubuntu would you like to use?")
-        #     ubuntu_input = input(question_str)
-        #     while ubuntu_input and not ubuntu_input in ubuntu_dict:
-        #         print("\"{}\" is not available from {}".format(ubuntu_input,
-        #                                                    list(ubuntu_dict.keys())))
-        #         ubuntu_input = input(question_str)
+        # Get Ubuntu Version from user
+        if ubuntu_input == "" or not ubuntu_input in ubuntu_dict:
+            question_str = "Version of Ubuntu would you like to use (Default: {}): ".format(default_ubuntu_vers)
+            question_str = blue_wrapper(question_str)
+            # print("What version of Ubuntu would you like to use?")
+            ubuntu_input = input(question_str)
+            while ubuntu_input and not ubuntu_input in ubuntu_dict:
+                print("\"{}\" is not available from {}".format(ubuntu_input,
+                                                           list(ubuntu_dict.keys())))
+                ubuntu_input = input(question_str)
 
-        #     if not ubuntu_input:
-        #         ubuntu_input = default_ubuntu_vers
+            if not ubuntu_input:
+                ubuntu_input = default_ubuntu_vers
         # Get CUDA version from user
         if cuda_input == "" or not cuda_input in cuda_dict[ubuntu_input]:
             question_str = "Version of CUDA would you like to use (Default: {}): ".format(
@@ -148,7 +148,7 @@ def main(args):
     print(blue_wrapper(".env has been rewritten to:"))
     print(env_file)
 
-    docker_cmd = "docker-compose up --no-start --build"
+    docker_cmd = "docker compose up --no-start --build"
     if args.build:
         subprocess.run(docker_cmd.split())
         print(blue_wrapper("Finished building docker container"))
@@ -161,7 +161,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="""
                     Script to help configure the docker container
-                    by rewriting the .env file used by docker-compose
+                    by rewriting the .env file used by docker compose
                     for building. It will automatically set up the
                     current user and their home directory as available
                     in the docker container.
@@ -181,6 +181,12 @@ if __name__ == "__main__":
         type=str,
         default="",
         help="Version of CUDA to use (Default: {})".format(default_cuda_vers),
+    )
+    parser.add_argument(
+        "--ubuntu",
+        type=str,
+        default="",
+        help="Version of Ubuntu to use (Default: {})".format(default_ubuntu_vers),
     )
     parser.add_argument(
         "-b",
