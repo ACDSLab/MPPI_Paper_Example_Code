@@ -93,7 +93,11 @@ int main(int argc, char* argv[])
   options.parameter_overrides(params);
 
   auto node = std::make_shared<rclcpp_lifecycle::LifecycleNode>(node_name, options);
+#ifdef CMAKE_ROS_IRON
   auto parameters_handler = std::make_unique<mppi::ParametersHandler>(node);
+#else
+  auto parameters_handler = std::make_unique<mppi::ParametersHandler>(node, node_name);
+#endif
   auto optimizer = std::make_shared<mppi::Optimizer>();
   std::weak_ptr<rclcpp_lifecycle::LifecycleNode> weak_ptr_node{ node };
   optimizer->initialize(weak_ptr_node, node->get_name(), costmap_ros, parameters_handler.get());
@@ -121,7 +125,11 @@ int main(int argc, char* argv[])
   for (int i = 0; i < num_iterations; i++)
   {
     auto start = std::chrono::steady_clock::now();
+#ifdef CMAKE_ROS_IRON
     optimizer->evalControl(start_pose, velocity, empty_path, dummy_goal_checker);
+#else
+    optimizer->evalControl(start_pose, velocity, empty_path, goal_pose.pose, dummy_goal_checker);
+#endif
     auto end = std::chrono::steady_clock::now();
     total_duration_ms += (end - start).count() / 1e6;
   }

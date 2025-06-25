@@ -69,10 +69,14 @@ protected:
   std::vector<rclcpp::Parameter> params;
   rclcpp::NodeOptions options;
   std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node;
+#ifdef CMAKE_ROS_IRON
   std::shared_ptr<mppi::Optimizer> optimizer;
+#else
+  mppi::Optimizer* optimizer;
+#endif
   std_msgs::msg::Header header;
 
-  geometry_msgs::msg::PoseStamped start_pose;
+  geometry_msgs::msg::PoseStamped start_pose, goal_pose;
   geometry_msgs::msg::Twist start_velocity;
   nav_msgs::msg::Path goals;
   nav2_core::GoalChecker* goal_checker{ nullptr };
@@ -171,8 +175,13 @@ protected:
     options.parameter_overrides(params);
 
     node = std::make_shared<rclcpp_lifecycle::LifecycleNode>(node_name, options);
+#ifdef CMAKE_ROS_IRON
     auto parameters_handler = std::make_unique<mppi::ParametersHandler>(node);
     optimizer = std::make_shared<mppi::Optimizer>();
+#else
+    auto parameters_handler = std::make_unique<mppi::ParametersHandler>(node, node_name);
+    optimizer = new mppi::Optimizer();
+#endif
     std::weak_ptr<rclcpp_lifecycle::LifecycleNode> weak_ptr_node{ node };
     optimizer->initialize(weak_ptr_node, node->get_name(), costmap_ros, parameters_handler.get());
 
@@ -187,7 +196,7 @@ protected:
 
     start_velocity.linear.x = settings.start_vel;
 
-    auto goal_pose = start_pose;
+    goal_pose = start_pose;
     goal_pose.pose.position.x = settings.goal_x;
     goal_pose.pose.position.y = settings.goal_y;
     goals.poses.push_back(goal_pose);
@@ -195,6 +204,20 @@ protected:
   }
   void TearDown() override
   {
+#ifdef CMAKE_ROS_IRON
+    // TODO: Check if issue is also in ROS 2 iron. It wasn't when I originally tested
+#else
+    // TODO: Explicitly don't delete the optimizer as it causes double free corruption
+    // This is happening in ROS2 kilted and is potentially related to
+    // https://github.com/ros-navigation/navigation2/issues/3767
+    // as the system I am testing on is an AMD system and probably doesn't have the same
+    // architecture options as the system that built the ROS 2 mppi package.
+    // Specifically the double free occurs with some Eigen variables in the optimizer
+    // which if the ros2 mppi shared library built Eigen with different compilaition flags
+    // compared to this executable, you would get weird memory issues
+
+    // delete optimizer;
+#endif
     rclcpp::shutdown();
   }
 };
@@ -206,7 +229,11 @@ TEST_P(ROS2MPPITest, DifferentNumSamples)
   {
     auto start = std::chrono::steady_clock::now();
     // run optimizer
+#ifdef CMAKE_ROS_IRON
     optimizer->evalControl(start_pose, start_velocity, goals, goal_checker);
+#else
+    optimizer->evalControl(start_pose, start_velocity, goals, goal_pose.pose, goal_checker);
+#endif
     auto end = std::chrono::steady_clock::now();
     double duration = (end - start).count() / 1e6;
     times.add(duration);

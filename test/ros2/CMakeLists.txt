@@ -14,9 +14,20 @@ foreach(T_FILE IN LISTS TARGET_SRCS)
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}
   )
 
-  ament_target_dependencies(${T_NAME}
-    rclcpp
-    nav2_mppi_controller
+  # Nav2 MPPI API changed between ROS 2 iron and ROS 2 kilted so I need a flag to
+  # detect the difference
+  if (DEFINED ENV{ROS_DISTRO} AND "$ENV{ROS_DISTRO}" STREQUAL "iron")
+    target_compile_definitions(${T_NAME} PUBLIC CMAKE_ROS_IRON)
+  endif()
+
+  # ament_target_dependencies(${T_NAME}
+  #   rclcpp
+  #   nav2_mppi_controller
+  # )
+  target_link_libraries(${T_NAME}
+    nav2_mppi_controller::mppi_controller
+    nav2_mppi_controller::mppi_critics
+    rclcpp::rclcpp
   )
   # gtest_add_tests(TARGET ${T_NAME})
   set_target_properties(${T_NAME} PROPERTIES FOLDER test)

@@ -15,6 +15,7 @@ foreach(T_FILE IN LISTS TARGET_SRCS)
           ${GTEST_LIBRARIES}
           ${MPPI_HEADER_LIBRARY_NAME}
           )
+  target_compile_options(${T_NAME} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--diag-suppress=20012>)
   if (NOT ament_cmake_FOUND)
     gtest_add_tests(TARGET ${T_NAME})
   endif()

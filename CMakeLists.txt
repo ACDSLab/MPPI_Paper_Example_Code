@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 project(mppi_paper_examples CXX CUDA)
 
+set(CMAKE_CXX_STANDARD 14) # use C++14 standard as gtest in Ubuntu 24.04 requires it
+
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/submodules/MPPI-Generic/cmake")
 if (CMAKE_VERSION VERSION_GREATER_EQUAL "3.18.0")
   cmake_policy(SET CMP0104 OLD)
