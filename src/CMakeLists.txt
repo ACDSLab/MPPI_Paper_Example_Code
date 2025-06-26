@@ -15,20 +15,21 @@ endforeach()
 if (nav2_mppi_controller_FOUND)
   set(ROS2_EXECUTABLE ros2_mppi)
   add_executable(${ROS2_EXECUTABLE} ROS2_MPPI.cpp)
-  # ament_target_dependencies(${ROS2_EXECUTABLE}
-  #   rclcpp
-  #   nav2_mppi_controller
-  # )
-  target_link_libraries(${ROS2_EXECUTABLE} PUBLIC
-      nav2_mppi_controller::mppi_controller
-      nav2_mppi_controller::mppi_critics
-      rclcpp::rclcpp
-    )
 
   # Nav2 MPPI API changed between ROS 2 iron and ROS 2 kilted so I need a flag to
   # detect the difference
   if (DEFINED ENV{ROS_DISTRO} AND "$ENV{ROS_DISTRO}" STREQUAL "iron")
     target_compile_definitions(${ROS2_EXECUTABLE} PUBLIC CMAKE_ROS_IRON)
+    ament_target_dependencies(${ROS2_EXECUTABLE}
+      rclcpp
+      nav2_mppi_controller
+    )
+  else()
+    target_link_libraries(${ROS2_EXECUTABLE} PUBLIC
+        nav2_mppi_controller::mppi_controller
+        nav2_mppi_controller::mppi_critics
+        rclcpp::rclcpp
+      )
   endif()
 
   install(TARGETS

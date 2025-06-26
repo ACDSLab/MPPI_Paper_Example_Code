@@ -18,17 +18,18 @@ foreach(T_FILE IN LISTS TARGET_SRCS)
   # detect the difference
   if (DEFINED ENV{ROS_DISTRO} AND "$ENV{ROS_DISTRO}" STREQUAL "iron")
     target_compile_definitions(${T_NAME} PUBLIC CMAKE_ROS_IRON)
+    ament_target_dependencies(${T_NAME}
+      rclcpp
+      nav2_mppi_controller
+    )
+  else()
+    target_link_libraries(${T_NAME}
+      nav2_mppi_controller::mppi_controller
+      nav2_mppi_controller::mppi_critics
+      rclcpp::rclcpp
+    )
   endif()
 
-  # ament_target_dependencies(${T_NAME}
-  #   rclcpp
-  #   nav2_mppi_controller
-  # )
-  target_link_libraries(${T_NAME}
-    nav2_mppi_controller::mppi_controller
-    nav2_mppi_controller::mppi_critics
-    rclcpp::rclcpp
-  )
   # gtest_add_tests(TARGET ${T_NAME})
   set_target_properties(${T_NAME} PROPERTIES FOLDER test)
 endforeach()
