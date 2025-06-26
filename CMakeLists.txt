@@ -17,8 +17,8 @@ include(MPPIGenericToolsConfig)
 # set(CMAKE_CUDA_FLAGS "-arch=sm_86")
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(BUILD_TESTS OFF CACHE BOOL "Build MPPI-Generic Tests")
-set(BUILD_EXAMPLES OFF CACHE BOOL "Build MPPI-Generic Examples")
+set(MPPI_BUILD_TESTS OFF CACHE BOOL "Build MPPI-Generic Tests")
+set(MPPI_BUILD_EXAMPLES OFF CACHE BOOL "Build MPPI-Generic Examples")
 
 # Other necessary packages
 find_package(ament_cmake QUIET)
