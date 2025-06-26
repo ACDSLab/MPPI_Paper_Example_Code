@@ -51,7 +51,9 @@ RUN apt update && DEBIAN_FRONTEND=noninteractive apt install -q -y --no-install-
     libxau6 \
     libxdmcp6 \
     libxcb1 \
+    libxcb-cursor0 \
     libxext6 \
+    libxkbfile1 \
     libx11-6 \
     libglvnd-dev \
     libgl1-mesa-dev \
