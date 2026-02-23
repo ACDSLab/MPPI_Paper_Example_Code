@@ -238,9 +238,9 @@ TEST_P(ROS2MPPITest, DifferentNumSamples)
     double duration = (end - start).count() / 1e6;
     times.add(duration);
   }
-  // Save to CSV File
+  // Save to CSV File (NAV2_VERSION comes from CMake Definition)
   CSVWritingEnvironment::csv_file << CSVWritingEnvironment::getCPUName()
-      << "," << CSVWritingEnvironment::getGPUName() << ",ros2,"
+      << "," << CSVWritingEnvironment::getGPUName() << ",nav2_" << NAV2_VERSION << ","
       << GetParam() << "," << times.mean()
       << "," << sqrt(times.variance()) << std::endl;
   printf("ROS2 MPPI with %d rollouts optimization time: %f +- %f ms\n", GetParam(), times.mean(),

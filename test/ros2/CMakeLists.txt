@@ -9,6 +9,7 @@ foreach(T_FILE IN LISTS TARGET_SRCS)
   target_link_libraries(${T_NAME}
     ${GTEST_LIBRARIES}
   )
+  target_compile_definitions(${T_NAME} PRIVATE NAV2_VERSION="${nav2_mppi_controller_VERSION}")
 
   target_include_directories(${T_NAME} SYSTEM PUBLIC
     ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}

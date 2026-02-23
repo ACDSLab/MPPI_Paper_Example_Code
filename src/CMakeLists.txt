@@ -18,7 +18,7 @@ if (nav2_mppi_controller_FOUND)
 
   # Nav2 MPPI API changed between ROS 2 iron and ROS 2 kilted so I need a flag to
   # detect the difference
-  if (DEFINED ENV{ROS_DISTRO} AND "$ENV{ROS_DISTRO}" STREQUAL "iron")
+  if (DEFINED ENV{ROS_DISTRO} AND ("$ENV{ROS_DISTRO}" STREQUAL "iron" OR "$ENV{ROS_DISTRO}" STREQUAL "humble"))
     target_compile_definitions(${ROS2_EXECUTABLE} PUBLIC CMAKE_ROS_IRON)
     ament_target_dependencies(${ROS2_EXECUTABLE}
       rclcpp
