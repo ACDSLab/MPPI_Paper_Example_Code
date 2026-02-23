@@ -20,7 +20,7 @@ services:
         USER_NAME: ${USER_NAME}
         ROS_DISTRO_NAME: ${ROS_DISTRO_NAME}
     image: ros_cuda:${ROS_DISTRO_NAME}_${CUDA_IMG_VERSION}
-    container_name: ubuntu${UBUNTU_VERSION}_ros_cuda_${CUDA_IMG_VERSION}
+    container_name: ubuntu${UBUNTU_VERSION}_ros_${ROS_DISTRO_NAME}_cuda_${CUDA_IMG_VERSION}
     hostname: ros_cuda
     deploy:
       resources:

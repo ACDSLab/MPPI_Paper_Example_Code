@@ -25,7 +25,7 @@ public:
   static std::string gpu_name;
   ~CSVWritingEnvironment() override {}
   void SetUp() override {
-    createNewCSVFile("ros2_results", csv_file);
+    createNewCSVFile("nav2_results", csv_file);
 
     // get CPU name
     cpu_name = getCPUModelName();

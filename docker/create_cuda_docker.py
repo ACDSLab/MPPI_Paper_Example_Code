@@ -9,7 +9,7 @@ from pathlib import Path
 
 ubuntu_dict = {"16.04": "xenial", "18.04": "bionic", "20.04": "focal", "22.04": "jammy", "24.04": "noble"}
 
-ros_dict = {"16.04": "kinetic", "18.04": "melodic", "20.04": "noetic", "22.04": "iron", "24.04": "kilted"}
+ros_dict = {"16.04": "kinetic", "18.04": "melodic", "20.04": "noetic", "22.04": "humble", "24.04": "jazzy"}
 
 cuda_dict = {"20.04": [], "22.04": [], "24.04": []}
 
